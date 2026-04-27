@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Timer / Metronome</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app" aria-label="Timer and metronome workspace">
+      <section class="pane timer-pane" aria-labelledby="timer-title">
+        <header class="pane-header">
+          <h1 id="timer-title">Timer</h1>
+          <span class="status" id="timer-status">Ready</span>
+        </header>
+
+        <div class="readout" id="timer-display" aria-live="polite">25:00</div>
+
+        <form class="time-form" id="time-form">
+          <label>
+            <span>Hours</span>
+            <input id="hours-input" type="number" inputmode="numeric" min="0" max="99" value="0" />
+          </label>
+          <label>
+            <span>Minutes</span>
+            <input id="minutes-input" type="number" inputmode="numeric" min="0" max="59" value="25" />
+          </label>
+          <label>
+            <span>Seconds</span>
+            <input id="seconds-input" type="number" inputmode="numeric" min="0" max="59" value="0" />
+          </label>
+        </form>
+
+        <div class="stepper" aria-label="Adjust timer minutes">
+          <button class="icon-button" id="timer-minus" type="button" aria-label="Subtract one minute">−</button>
+          <span>Minutes</span>
+          <button class="icon-button" id="timer-plus" type="button" aria-label="Add one minute">+</button>
+        </div>
+
+        <footer class="controls">
+          <button class="control" id="timer-start" type="button" aria-label="Start timer">
+            <span class="symbol">▶</span>
+            <span>Start</span>
+          </button>
+          <button class="control" id="timer-pause" type="button" aria-label="Pause timer">
+            <span class="symbol">Ⅱ</span>
+            <span>Pause</span>
+          </button>
+          <button class="control" id="timer-reset" type="button" aria-label="Reset timer">
+            <span class="symbol">↻</span>
+            <span>Reset</span>
+          </button>
+        </footer>
+      </section>
+
+      <section class="pane metronome-pane" aria-labelledby="metronome-title">
+        <header class="pane-header">
+          <h1 id="metronome-title">Metronome</h1>
+          <span class="status" id="metro-status">Silent</span>
+        </header>
+
+        <div class="bpm-wrap">
+          <input id="bpm-input" class="bpm-input" type="number" min="20" max="240" value="120" aria-label="Beats per minute" />
+          <span>BPM</span>
+        </div>
+
+        <div class="tempo-control" aria-label="Adjust tempo">
+          <button class="icon-button" id="bpm-minus" type="button" aria-label="Decrease tempo">−</button>
+          <input id="bpm-slider" type="range" min="20" max="240" value="120" />
+          <button class="icon-button" id="bpm-plus" type="button" aria-label="Increase tempo">+</button>
+        </div>
+
+        <div class="beats" aria-label="Beat indicator">
+          <div class="beat active"><span></span><small>1</small></div>
+          <div class="beat"><span></span><small>2</small></div>
+          <div class="beat"><span></span><small>3</small></div>
+          <div class="beat"><span></span><small>4</small></div>
+          <div class="beat"><span></span><small>5</small></div>
+          <div class="beat"><span></span><small>6</small></div>
+          <div class="beat"><span></span><small>7</small></div>
+          <div class="beat"><span></span><small>8</small></div>
+        </div>
+
+        <footer class="controls metro-controls">
+          <button class="control" id="metro-start" type="button" aria-label="Start metronome">
+            <span class="symbol">▶</span>
+            <span>Start</span>
+          </button>
+          <button class="control" id="metro-pause" type="button" aria-label="Pause metronome">
+            <span class="symbol">Ⅱ</span>
+            <span>Pause</span>
+          </button>
+        </footer>
+      </section>
+    </main>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
