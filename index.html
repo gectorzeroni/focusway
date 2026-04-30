@@ -38,17 +38,16 @@
         </div>
 
         <footer class="controls">
-          <button class="control" id="timer-start" type="button" aria-label="Start timer">
-            <span class="symbol">▶</span>
-            <span>Start</span>
-          </button>
-          <button class="control" id="timer-pause" type="button" aria-label="Pause timer">
-            <span class="symbol">Ⅱ</span>
-            <span>Pause</span>
+          <button class="control play-toggle" id="timer-toggle" type="button" aria-label="Start timer" aria-pressed="false">
+            <span class="symbol" aria-hidden="true">
+              <span class="symbol-icon play-icon">▶</span>
+              <span class="symbol-icon pause-icon">Ⅱ</span>
+            </span>
+            <span class="control-label">Start</span>
           </button>
           <button class="control" id="timer-reset" type="button" aria-label="Reset timer">
-            <span class="symbol">↻</span>
-            <span>Reset</span>
+            <span class="symbol" aria-hidden="true">↻</span>
+            <span class="control-label">Reset</span>
           </button>
         </footer>
       </section>
@@ -82,13 +81,12 @@
         </div>
 
         <footer class="controls metro-controls">
-          <button class="control" id="metro-start" type="button" aria-label="Start metronome">
-            <span class="symbol">▶</span>
-            <span>Start</span>
-          </button>
-          <button class="control" id="metro-pause" type="button" aria-label="Pause metronome">
-            <span class="symbol">Ⅱ</span>
-            <span>Pause</span>
+          <button class="control play-toggle" id="metro-toggle" type="button" aria-label="Start metronome" aria-pressed="false">
+            <span class="symbol" aria-hidden="true">
+              <span class="symbol-icon play-icon">▶</span>
+              <span class="symbol-icon pause-icon">Ⅱ</span>
+            </span>
+            <span class="control-label">Start</span>
           </button>
         </footer>
       </section>

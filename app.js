@@ -4,8 +4,7 @@ const timerStatus = document.querySelector('#timer-status');
 const hoursInput = document.querySelector('#hours-input');
 const minutesInput = document.querySelector('#minutes-input');
 const secondsInput = document.querySelector('#seconds-input');
-const timerStart = document.querySelector('#timer-start');
-const timerPause = document.querySelector('#timer-pause');
+const timerToggle = document.querySelector('#timer-toggle');
 const timerReset = document.querySelector('#timer-reset');
 const timerMinus = document.querySelector('#timer-minus');
 const timerPlus = document.querySelector('#timer-plus');
@@ -16,8 +15,7 @@ const bpmInput = document.querySelector('#bpm-input');
 const bpmSlider = document.querySelector('#bpm-slider');
 const bpmMinus = document.querySelector('#bpm-minus');
 const bpmPlus = document.querySelector('#bpm-plus');
-const metroStart = document.querySelector('#metro-start');
-const metroPause = document.querySelector('#metro-pause');
+const metroToggle = document.querySelector('#metro-toggle');
 const beatNodes = [...document.querySelectorAll('.beat')];
 
 let timerDuration = 25 * 60;
@@ -81,11 +79,26 @@ function updateTimerDisplay() {
   timerDisplay.textContent = formatTime(timerRemaining);
 }
 
+function setToggleState(
+  button,
+  active,
+  activeLabel = 'Pause',
+  inactiveLabel = 'Start',
+  activeText = 'Pause',
+  inactiveText = 'Start',
+) {
+  button.classList.toggle('is-active', active);
+  button.setAttribute('aria-pressed', String(active));
+  button.setAttribute('aria-label', active ? activeLabel : inactiveLabel);
+  button.querySelector('.control-label').textContent = active ? activeText : inactiveText;
+}
+
 function stopTimer(label = 'Paused') {
   window.clearInterval(timerInterval);
   timerInterval = null;
   timerStatus.textContent = label;
   timerPane.classList.remove('is-running');
+  setToggleState(timerToggle, false, 'Pause timer', 'Start timer');
 }
 
 function tickTimer() {
@@ -112,8 +125,18 @@ function startTimer() {
     timerInterval = window.setInterval(tickTimer, 250);
     timerStatus.textContent = 'Running';
     timerPane.classList.add('is-running');
+    setToggleState(timerToggle, true, 'Pause timer', 'Start timer');
     tickTimer();
   }
+}
+
+function toggleTimer() {
+  if (timerInterval) {
+    stopTimer('Paused');
+    return;
+  }
+
+  startTimer();
 }
 
 function handleTimerInput() {
@@ -179,6 +202,7 @@ function startMetronome() {
   metroRunning = true;
   metroPane.classList.add('is-running');
   metroStatus.textContent = 'Playing';
+  setToggleState(metroToggle, true, 'Pause metronome', 'Start metronome');
   pulseMetronome();
   metroTimer = window.setInterval(pulseMetronome, 60000 / parseInt(bpmInput.value, 10));
 }
@@ -188,10 +212,20 @@ function stopMetronome(updateStatus = true) {
   metroTimer = null;
   metroRunning = false;
   metroPane.classList.remove('is-running');
+  setToggleState(metroToggle, false, 'Pause metronome', 'Start metronome');
 
   if (updateStatus) {
     metroStatus.textContent = 'Silent';
   }
+}
+
+function toggleMetronome() {
+  if (metroRunning) {
+    stopMetronome();
+    return;
+  }
+
+  startMetronome();
 }
 
 [hoursInput, minutesInput, secondsInput].forEach((input) => {
@@ -204,8 +238,7 @@ function stopMetronome(updateStatus = true) {
   });
 });
 
-timerStart.addEventListener('click', startTimer);
-timerPause.addEventListener('click', () => stopTimer('Paused'));
+timerToggle.addEventListener('click', toggleTimer);
 timerReset.addEventListener('click', () => {
   stopTimer('Ready');
   timerRemaining = timerDuration;
@@ -218,8 +251,7 @@ bpmInput.addEventListener('input', () => setBpm(bpmInput.value));
 bpmSlider.addEventListener('input', () => setBpm(bpmSlider.value));
 bpmMinus.addEventListener('click', () => setBpm(parseInt(bpmInput.value, 10) - 1));
 bpmPlus.addEventListener('click', () => setBpm(parseInt(bpmInput.value, 10) + 1));
-metroStart.addEventListener('click', startMetronome);
-metroPause.addEventListener('click', stopMetronome);
+metroToggle.addEventListener('click', toggleMetronome);
 
 setTimerDuration(timerDuration);
 setBpm(120);

@@ -24,6 +24,7 @@ body {
   color: var(--ink);
   font-family: Helvetica, Arial, sans-serif;
   letter-spacing: 0;
+  -webkit-font-smoothing: antialiased;
 }
 
 button,
@@ -68,7 +69,7 @@ h1 {
 .status,
 .stepper span,
 .bpm-wrap span,
-.control span:last-child,
+.control-label,
 .time-form span {
   color: var(--muted);
   font-size: 0.78rem;
@@ -237,13 +238,13 @@ input[type='range'] {
 
 .controls {
   display: grid;
-  grid-template-columns: repeat(3, minmax(4.75rem, 7rem));
+  grid-template-columns: repeat(2, minmax(4.75rem, 7rem));
   justify-content: center;
   gap: clamp(1rem, 5vw, 4.25rem);
 }
 
 .metro-controls {
-  grid-template-columns: repeat(2, minmax(4.75rem, 7rem));
+  grid-template-columns: minmax(4.75rem, 7rem);
 }
 
 .control {
@@ -252,9 +253,18 @@ input[type='range'] {
   gap: 0.9rem;
   min-width: 0;
   min-height: 5.5rem;
+  transform: scale(1);
+  transition-property: color, transform;
+  transition-duration: 180ms;
+  transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
+}
+
+.control:active {
+  transform: scale(0.96);
 }
 
 .symbol {
+  position: relative;
   display: grid;
   place-items: center;
   width: 3.25rem;
@@ -262,6 +272,39 @@ input[type='range'] {
   color: currentColor;
   font-size: 2.25rem;
   line-height: 1;
+}
+
+.symbol-icon {
+  grid-area: 1 / 1;
+  transition-property: opacity, transform, filter;
+  transition-duration: 260ms;
+  transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
+}
+
+.play-icon {
+  transform: translateX(0.08em) scale(1);
+}
+
+.pause-icon {
+  opacity: 0;
+  filter: blur(4px);
+  transform: scale(0.25);
+}
+
+.play-toggle.is-active .play-icon {
+  opacity: 0;
+  filter: blur(4px);
+  transform: translateX(0.08em) scale(0.25);
+}
+
+.play-toggle.is-active .pause-icon {
+  opacity: 1;
+  filter: blur(0);
+  transform: scale(1);
+}
+
+.play-toggle.is-active .control-label {
+  color: var(--accent);
 }
 
 .is-running .status {
@@ -297,12 +340,12 @@ input[type='range'] {
   }
 
   .controls {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.75rem;
   }
 
   .metro-controls {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr);
   }
 
   :root {
@@ -340,7 +383,7 @@ input[type='range'] {
     font-size: 0.78rem;
   }
 
-  .control span:last-child,
+  .control-label,
   .time-form span,
   .stepper span,
   .bpm-wrap span {
