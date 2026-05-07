@@ -51,6 +51,10 @@ input {
   border-right: 1px solid var(--line);
 }
 
+.metronome-pane {
+  grid-template-rows: auto auto minmax(0, 1fr);
+}
+
 .pane-header {
   display: flex;
   align-items: baseline;
@@ -70,12 +74,73 @@ h1 {
 .stepper span,
 .bpm-wrap span,
 .control-label,
+.mode-button,
+.spotify-form span,
 .time-form span {
   color: var(--muted);
   font-size: 0.78rem;
   font-weight: 500;
   letter-spacing: 0.11em;
   text-transform: uppercase;
+}
+
+.mode-switch {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0;
+  width: min(100%, 24rem);
+  margin: clamp(2rem, 5vh, 4rem) auto 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.mode-button {
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 0 0 0.9rem;
+  transform: scale(1);
+  transition-property: border-color, color, transform;
+  transition-duration: 180ms;
+  transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
+}
+
+.mode-button:hover,
+.mode-button:focus-visible,
+.mode-button.is-selected {
+  border-color: var(--ink);
+  color: var(--ink);
+  outline: 0;
+}
+
+.mode-button:active {
+  transform: scale(0.96);
+}
+
+.sound-panel {
+  display: grid;
+  min-width: 0;
+  min-height: 0;
+  opacity: 1;
+  transform: translateY(0);
+  transition-property: opacity, transform;
+  transition-duration: 220ms;
+  transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
+}
+
+.sound-panel[hidden] {
+  display: none;
+}
+
+#metronome-panel {
+  grid-template-rows: 1fr auto auto auto;
+}
+
+.music-panel {
+  align-content: center;
+  gap: clamp(1.5rem, 5vh, 3.5rem);
+  padding-top: clamp(2rem, 6vh, 5rem);
 }
 
 .readout,
@@ -198,6 +263,84 @@ input[type='range'] {
   width: 100%;
   min-width: 0;
   accent-color: var(--ink);
+}
+
+.spotify-stage {
+  width: min(100%, 36rem);
+  margin: 0 auto;
+}
+
+.spotify-stage iframe {
+  display: block;
+  width: 100%;
+  height: clamp(15rem, 44vh, 22rem);
+  border: 0;
+  border-radius: 0;
+  background: var(--soft-line);
+}
+
+.spotify-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 1rem;
+  width: min(100%, 36rem);
+  margin: 0 auto;
+}
+
+.spotify-form label {
+  display: grid;
+  min-width: 0;
+  gap: 0.55rem;
+}
+
+.spotify-form input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink);
+  padding: 0.58rem 0;
+  outline: 0;
+}
+
+.spotify-form input:focus {
+  border-color: var(--ink);
+}
+
+.spotify-form.has-error input {
+  border-color: var(--accent);
+}
+
+.load-button {
+  min-width: 4.75rem;
+  min-height: 2.75rem;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 500;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  transform: scale(1);
+  transition-property: border-color, color, transform;
+  transition-duration: 180ms;
+  transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
+}
+
+.load-button:hover,
+.load-button:focus-visible {
+  border-color: var(--accent);
+  color: var(--accent);
+  outline: 0;
+}
+
+.load-button:active {
+  transform: scale(0.96);
 }
 
 .beats {
@@ -327,6 +470,14 @@ input[type='range'] {
     border-bottom: 1px solid var(--line);
   }
 
+  .metronome-pane {
+    min-height: 50vh;
+  }
+
+  .mode-switch {
+    margin-top: 1.5rem;
+  }
+
   .readout {
     font-size: clamp(4rem, 20vw, 6.25rem);
   }
@@ -346,6 +497,24 @@ input[type='range'] {
 
   .metro-controls {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .music-panel {
+    padding-top: 1.5rem;
+    gap: 1rem;
+  }
+
+  .spotify-stage iframe {
+    height: 11.5rem;
+  }
+
+  .spotify-form {
+    grid-template-columns: 1fr;
+    gap: 0.8rem;
+  }
+
+  .load-button {
+    justify-self: stretch;
   }
 
   :root {
@@ -384,6 +553,9 @@ input[type='range'] {
   }
 
   .control-label,
+  .mode-button,
+  .spotify-form span,
+  .load-button,
   .time-form span,
   .stepper span,
   .bpm-wrap span {

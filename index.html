@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
-    <main class="app" aria-label="Timer and metronome workspace">
+    <main class="app" aria-label="Timer and sound workspace">
       <section class="pane timer-pane" aria-labelledby="timer-title">
         <header class="pane-header">
           <h1 id="timer-title">Timer</h1>
@@ -52,43 +52,72 @@
         </footer>
       </section>
 
-      <section class="pane metronome-pane" aria-labelledby="metronome-title">
+      <section class="pane metronome-pane" aria-labelledby="sound-title">
         <header class="pane-header">
-          <h1 id="metronome-title">Metronome</h1>
+          <h1 id="sound-title">Sound</h1>
           <span class="status" id="metro-status">Silent</span>
         </header>
 
-        <div class="bpm-wrap">
-          <input id="bpm-input" class="bpm-input" type="number" min="20" max="240" value="120" aria-label="Beats per minute" />
-          <span>BPM</span>
+        <div class="mode-switch" role="tablist" aria-label="Sound source">
+          <button class="mode-button is-selected" id="metronome-tab" type="button" role="tab" aria-selected="true" aria-controls="metronome-panel" data-sound-mode="metronome">Metronome</button>
+          <button class="mode-button" id="music-tab" type="button" role="tab" aria-selected="false" aria-controls="music-panel" data-sound-mode="music">Music</button>
         </div>
 
-        <div class="tempo-control" aria-label="Adjust tempo">
-          <button class="icon-button" id="bpm-minus" type="button" aria-label="Decrease tempo">−</button>
-          <input id="bpm-slider" type="range" min="20" max="240" value="120" />
-          <button class="icon-button" id="bpm-plus" type="button" aria-label="Increase tempo">+</button>
+        <div class="sound-panel is-selected" id="metronome-panel" role="tabpanel" aria-labelledby="metronome-tab">
+          <div class="bpm-wrap">
+            <input id="bpm-input" class="bpm-input" type="number" min="20" max="240" value="120" aria-label="Beats per minute" />
+            <span>BPM</span>
+          </div>
+
+          <div class="tempo-control" aria-label="Adjust tempo">
+            <button class="icon-button" id="bpm-minus" type="button" aria-label="Decrease tempo">−</button>
+            <input id="bpm-slider" type="range" min="20" max="240" value="120" />
+            <button class="icon-button" id="bpm-plus" type="button" aria-label="Increase tempo">+</button>
+          </div>
+
+          <div class="beats" aria-label="Beat indicator">
+            <div class="beat active"><span></span><small>1</small></div>
+            <div class="beat"><span></span><small>2</small></div>
+            <div class="beat"><span></span><small>3</small></div>
+            <div class="beat"><span></span><small>4</small></div>
+            <div class="beat"><span></span><small>5</small></div>
+            <div class="beat"><span></span><small>6</small></div>
+            <div class="beat"><span></span><small>7</small></div>
+            <div class="beat"><span></span><small>8</small></div>
+          </div>
+
+          <footer class="controls metro-controls">
+            <button class="control play-toggle" id="metro-toggle" type="button" aria-label="Start metronome" aria-pressed="false">
+              <span class="symbol" aria-hidden="true">
+                <span class="symbol-icon play-icon">▶</span>
+                <span class="symbol-icon pause-icon">Ⅱ</span>
+              </span>
+              <span class="control-label">Start</span>
+            </button>
+          </footer>
         </div>
 
-        <div class="beats" aria-label="Beat indicator">
-          <div class="beat active"><span></span><small>1</small></div>
-          <div class="beat"><span></span><small>2</small></div>
-          <div class="beat"><span></span><small>3</small></div>
-          <div class="beat"><span></span><small>4</small></div>
-          <div class="beat"><span></span><small>5</small></div>
-          <div class="beat"><span></span><small>6</small></div>
-          <div class="beat"><span></span><small>7</small></div>
-          <div class="beat"><span></span><small>8</small></div>
-        </div>
+        <div class="sound-panel music-panel" id="music-panel" role="tabpanel" aria-labelledby="music-tab" hidden>
+          <div class="spotify-stage">
+            <iframe
+              id="spotify-frame"
+              title="Spotify player"
+              src="https://open.spotify.com/embed/track/6rqhFgbbKwnb9MLmUQDhG6?utm_source=generator"
+              width="100%"
+              height="352"
+              allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+              loading="lazy"
+            ></iframe>
+          </div>
 
-        <footer class="controls metro-controls">
-          <button class="control play-toggle" id="metro-toggle" type="button" aria-label="Start metronome" aria-pressed="false">
-            <span class="symbol" aria-hidden="true">
-              <span class="symbol-icon play-icon">▶</span>
-              <span class="symbol-icon pause-icon">Ⅱ</span>
-            </span>
-            <span class="control-label">Start</span>
-          </button>
-        </footer>
+          <form class="spotify-form" id="spotify-form">
+            <label>
+              <span>Spotify URL</span>
+              <input id="spotify-input" type="url" inputmode="url" placeholder="https://open.spotify.com/..." autocomplete="off" />
+            </label>
+            <button class="load-button" type="submit">Load</button>
+          </form>
+        </div>
       </section>
     </main>
 

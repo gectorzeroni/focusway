@@ -17,6 +17,12 @@ const bpmMinus = document.querySelector('#bpm-minus');
 const bpmPlus = document.querySelector('#bpm-plus');
 const metroToggle = document.querySelector('#metro-toggle');
 const beatNodes = [...document.querySelectorAll('.beat')];
+const soundModeButtons = [...document.querySelectorAll('[data-sound-mode]')];
+const metronomePanel = document.querySelector('#metronome-panel');
+const musicPanel = document.querySelector('#music-panel');
+const spotifyForm = document.querySelector('#spotify-form');
+const spotifyInput = document.querySelector('#spotify-input');
+const spotifyFrame = document.querySelector('#spotify-frame');
 
 let timerDuration = 25 * 60;
 let timerRemaining = timerDuration;
@@ -27,6 +33,10 @@ let audioContext = null;
 let metroTimer = null;
 let metroRunning = false;
 let currentBeat = 0;
+let soundMode = 'metronome';
+let currentSpotifyEmbedSrc = spotifyFrame.src;
+
+const spotifyTypes = new Set(['album', 'artist', 'episode', 'playlist', 'show', 'track']);
 
 function clamp(value, min, max) {
   return Math.min(Math.max(Number.isFinite(value) ? value : min, min), max);
@@ -160,6 +170,102 @@ function setBpm(value) {
   }
 }
 
+function readStoredValue(key) {
+  try {
+    return window.localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function storeValue(key, value) {
+  try {
+    window.localStorage.setItem(key, value);
+  } catch {
+    return null;
+  }
+}
+
+function parseSpotifyInput(value) {
+  const input = value.trim();
+  if (!input) return null;
+
+  if (input.startsWith('spotify:')) {
+    const [, type, id] = input.split(':');
+    return spotifyTypes.has(type) && id ? { type, id } : null;
+  }
+
+  try {
+    const url = new URL(input);
+    const host = url.hostname.replace(/^www\./, '');
+    const parts = url.pathname.split('/').filter(Boolean);
+    if (host !== 'open.spotify.com' || parts.length < 2) return null;
+
+    let offset = parts[0] === 'embed' ? 1 : 0;
+    if (parts[offset]?.startsWith('intl-')) {
+      offset += 1;
+    }
+
+    const type = parts[offset];
+    const id = parts[offset + 1];
+    return spotifyTypes.has(type) && id ? { type, id } : null;
+  } catch {
+    return null;
+  }
+}
+
+function spotifyEmbedSource({ type, id }) {
+  return `https://open.spotify.com/embed/${type}/${id}?utm_source=generator`;
+}
+
+function loadSpotify(value) {
+  const parsed = parseSpotifyInput(value);
+
+  if (!parsed) {
+    spotifyForm.classList.add('has-error');
+    metroStatus.textContent = 'Invalid';
+    return;
+  }
+
+  spotifyForm.classList.remove('has-error');
+  currentSpotifyEmbedSrc = spotifyEmbedSource(parsed);
+  spotifyFrame.src = currentSpotifyEmbedSrc;
+  spotifyInput.value = `https://open.spotify.com/${parsed.type}/${parsed.id}`;
+  metroStatus.textContent = 'Music';
+  storeValue('focusway.spotify', spotifyInput.value);
+}
+
+function stopSpotifyPlayback() {
+  if (spotifyFrame.src !== 'about:blank') {
+    spotifyFrame.src = 'about:blank';
+  }
+}
+
+function setSoundMode(mode) {
+  soundMode = mode === 'music' ? 'music' : 'metronome';
+  const isMusic = soundMode === 'music';
+
+  soundModeButtons.forEach((button) => {
+    const selected = button.dataset.soundMode === soundMode;
+    button.classList.toggle('is-selected', selected);
+    button.setAttribute('aria-selected', String(selected));
+  });
+
+  metronomePanel.hidden = isMusic;
+  musicPanel.hidden = !isMusic;
+
+  if (isMusic) {
+    stopMetronome();
+    spotifyFrame.src = currentSpotifyEmbedSrc;
+    metroStatus.textContent = 'Music';
+  } else {
+    stopSpotifyPlayback();
+    metroStatus.textContent = metroRunning ? 'Playing' : 'Silent';
+  }
+
+  storeValue('focusway.soundMode', soundMode);
+}
+
 function ensureAudioContext() {
   if (!audioContext) {
     audioContext = new AudioContext();
@@ -253,5 +359,26 @@ bpmMinus.addEventListener('click', () => setBpm(parseInt(bpmInput.value, 10) - 1
 bpmPlus.addEventListener('click', () => setBpm(parseInt(bpmInput.value, 10) + 1));
 metroToggle.addEventListener('click', toggleMetronome);
 
+soundModeButtons.forEach((button) => {
+  button.addEventListener('click', () => setSoundMode(button.dataset.soundMode));
+});
+
+spotifyForm.addEventListener('submit', (event) => {
+  event.preventDefault();
+  loadSpotify(spotifyInput.value);
+});
+
 setTimerDuration(timerDuration);
 setBpm(120);
+
+const storedSpotify = readStoredValue('focusway.spotify');
+if (storedSpotify) {
+  const parsed = parseSpotifyInput(storedSpotify);
+  if (parsed) {
+    currentSpotifyEmbedSrc = spotifyEmbedSource(parsed);
+    spotifyFrame.src = currentSpotifyEmbedSrc;
+    spotifyInput.value = storedSpotify;
+  }
+}
+
+setSoundMode(readStoredValue('focusway.soundMode') || 'metronome');
