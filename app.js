@@ -31,6 +31,7 @@ let editingTimer = false;
 let audioContext = null;
 let metroTimer = null;
 let metroRunning = false;
+let metronomeStartedByTimer = false;
 let currentBeat = 0;
 let soundMode = 'metronome';
 let currentSpotifyEmbedSrc = spotifyFrame.src;
@@ -143,6 +144,11 @@ function stopTimer(label = 'Paused') {
   timerStatus.textContent = label;
   timerPane.classList.remove('is-running');
   setToggleState(timerToggle, false, 'Pause timer', 'Start timer');
+
+  if (metronomeStartedByTimer) {
+    stopMetronome();
+    metronomeStartedByTimer = false;
+  }
 }
 
 function tickTimer() {
@@ -172,6 +178,7 @@ function startTimer() {
     setToggleState(timerToggle, true, 'Pause timer', 'Start timer');
     if (soundMode === 'metronome' && !metroRunning) {
       startMetronome();
+      metronomeStartedByTimer = true;
     }
     tickTimer();
   }
@@ -363,6 +370,7 @@ function stopMetronome(updateStatus = true) {
   window.clearInterval(metroTimer);
   metroTimer = null;
   metroRunning = false;
+  metronomeStartedByTimer = false;
   metroPane.classList.remove('is-running');
   setToggleState(metroToggle, false, 'Pause metronome', 'Start metronome');
 
