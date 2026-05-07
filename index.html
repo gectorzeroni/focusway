@@ -14,22 +14,23 @@
           <span class="status" id="timer-status">Ready</span>
         </header>
 
-        <div class="readout" id="timer-display" aria-live="polite">25:00</div>
+        <div
+          class="readout timer-editor"
+          id="timer-display"
+          role="textbox"
+          aria-label="Timer duration"
+          aria-live="polite"
+          aria-multiline="false"
+          contenteditable="true"
+          inputmode="numeric"
+          spellcheck="false"
+        >25:00</div>
 
-        <form class="time-form" id="time-form">
-          <label>
-            <span>Hours</span>
-            <input id="hours-input" type="number" inputmode="numeric" min="0" max="99" value="0" />
-          </label>
-          <label>
-            <span>Minutes</span>
-            <input id="minutes-input" type="number" inputmode="numeric" min="0" max="59" value="25" />
-          </label>
-          <label>
-            <span>Seconds</span>
-            <input id="seconds-input" type="number" inputmode="numeric" min="0" max="59" value="0" />
-          </label>
-        </form>
+        <div class="preset-tabs" role="tablist" aria-label="Timer presets">
+          <button class="preset-tab" type="button" data-preset-minutes="5">5 min</button>
+          <button class="preset-tab" type="button" data-preset-minutes="10">10 min</button>
+          <button class="preset-tab" type="button" data-preset-minutes="30">30 min</button>
+        </div>
 
         <div class="stepper" aria-label="Adjust timer minutes">
           <button class="icon-button" id="timer-minus" type="button" aria-label="Subtract one minute">−</button>

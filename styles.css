@@ -41,7 +41,7 @@ input {
 
 .pane {
   display: grid;
-  grid-template-rows: auto 1fr auto auto;
+  grid-template-rows: auto minmax(0, 1fr) auto auto auto;
   min-width: 0;
   min-height: 100vh;
   padding: clamp(1.5rem, 3.2vw, 3.5rem);
@@ -76,7 +76,7 @@ h1 {
 .control-label,
 .mode-button,
 .spotify-form span,
-.time-form span {
+.preset-tab {
   color: var(--muted);
   font-size: 0.78rem;
   font-weight: 500;
@@ -159,6 +159,70 @@ h1 {
   font-size: clamp(5.2rem, 13vw, 15rem);
 }
 
+.timer-editor {
+  align-self: center;
+  justify-self: center;
+  width: auto;
+  min-width: min(100%, 4ch);
+  max-width: 100%;
+  cursor: text;
+  outline: 0;
+  padding: 0.08em 0.04em;
+  text-decoration-color: transparent;
+  text-underline-offset: 0.18em;
+  transition-property: color, text-decoration-color, transform;
+  transition-duration: 180ms;
+  transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
+  white-space: nowrap;
+}
+
+.timer-editor:hover,
+.timer-editor:focus,
+.timer-editor.is-editing {
+  color: var(--accent);
+  text-decoration-line: underline;
+  text-decoration-thickness: 0.035em;
+  text-decoration-color: var(--line);
+}
+
+.timer-editor:focus {
+  transform: scale(0.985);
+}
+
+.preset-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+  width: min(100%, 22rem);
+  margin: 0 auto 1.6rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.preset-tab {
+  min-height: 2.8rem;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transform: scale(1);
+  transition-property: border-color, color, transform;
+  transition-duration: 180ms;
+  transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
+}
+
+.preset-tab:hover,
+.preset-tab:focus-visible,
+.preset-tab.is-selected {
+  border-color: var(--ink);
+  color: var(--ink);
+  outline: 0;
+}
+
+.preset-tab:active {
+  transform: scale(0.96);
+}
+
 .bpm-wrap {
   align-self: center;
   display: grid;
@@ -182,37 +246,6 @@ h1 {
   appearance: none;
 }
 
-.time-form {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 7rem));
-  justify-content: center;
-  gap: 0.75rem;
-  margin-bottom: 1.6rem;
-}
-
-.time-form label {
-  display: grid;
-  gap: 0.55rem;
-  min-width: 0;
-  text-align: center;
-}
-
-.time-form input {
-  width: 100%;
-  min-width: 0;
-  border: 0;
-  border-bottom: 1px solid var(--line);
-  border-radius: 0;
-  background: transparent;
-  color: var(--ink);
-  padding: 0.45rem 0.2rem;
-  text-align: center;
-  font-size: 1.15rem;
-  font-variant-numeric: tabular-nums;
-  outline: 0;
-}
-
-.time-form input:focus,
 .bpm-input:focus {
   border-color: var(--ink);
 }
@@ -266,14 +299,14 @@ input[type='range'] {
 }
 
 .spotify-stage {
-  width: min(100%, 36rem);
+  width: min(100%, 42rem);
   margin: 0 auto;
 }
 
 .spotify-stage iframe {
   display: block;
   width: 100%;
-  height: clamp(15rem, 44vh, 22rem);
+  height: clamp(22rem, 58vh, 31rem);
   border: 0;
   border-radius: 0;
   background: var(--soft-line);
@@ -284,7 +317,7 @@ input[type='range'] {
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: end;
   gap: 1rem;
-  width: min(100%, 36rem);
+  width: min(100%, 42rem);
   margin: 0 auto;
 }
 
@@ -486,8 +519,8 @@ input[type='range'] {
     font-size: clamp(4.8rem, 24vw, 7rem);
   }
 
-  .time-form {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+  .timer-editor {
+    min-width: min(100%, 3.4ch);
   }
 
   .controls {
@@ -505,7 +538,7 @@ input[type='range'] {
   }
 
   .spotify-stage iframe {
-    height: 11.5rem;
+    height: 17rem;
   }
 
   .spotify-form {
@@ -556,7 +589,7 @@ input[type='range'] {
   .mode-button,
   .spotify-form span,
   .load-button,
-  .time-form span,
+  .preset-tab,
   .stepper span,
   .bpm-wrap span {
     font-size: 0.68rem;

@@ -1,9 +1,7 @@
 const timerPane = document.querySelector('.timer-pane');
 const timerDisplay = document.querySelector('#timer-display');
 const timerStatus = document.querySelector('#timer-status');
-const hoursInput = document.querySelector('#hours-input');
-const minutesInput = document.querySelector('#minutes-input');
-const secondsInput = document.querySelector('#seconds-input');
+const presetButtons = [...document.querySelectorAll('[data-preset-minutes]')];
 const timerToggle = document.querySelector('#timer-toggle');
 const timerReset = document.querySelector('#timer-reset');
 const timerMinus = document.querySelector('#timer-minus');
@@ -28,6 +26,7 @@ let timerDuration = 25 * 60;
 let timerRemaining = timerDuration;
 let timerInterval = null;
 let timerEndsAt = 0;
+let editingTimer = false;
 
 let audioContext = null;
 let metroTimer = null;
@@ -56,37 +55,72 @@ function formatTime(totalSeconds) {
     : `${minutes}:${pad(remainingSeconds)}`;
 }
 
-function readTimerInputs() {
-  const hours = clamp(parseInt(hoursInput.value, 10), 0, 99);
-  const minutes = clamp(parseInt(minutesInput.value, 10), 0, 59);
-  const seconds = clamp(parseInt(secondsInput.value, 10), 0, 59);
+function parseTimerText(value) {
+  const text = value.trim();
+  if (!text) return null;
 
-  hoursInput.value = hours;
-  minutesInput.value = minutes;
-  secondsInput.value = seconds;
+  if (text.includes(':')) {
+    const parts = text.split(':').map((part) => parseInt(part, 10));
+    if (parts.some((part) => !Number.isFinite(part) || part < 0)) return null;
 
-  return hours * 3600 + minutes * 60 + seconds;
+    const [hours = 0, minutes = 0, seconds = 0] =
+      parts.length === 3 ? parts : [0, parts[0], parts[1]];
+
+    if (minutes > 59 || seconds > 59) return null;
+    return hours * 3600 + minutes * 60 + seconds;
+  }
+
+  const minutes = parseInt(text, 10);
+  return Number.isFinite(minutes) && minutes >= 0 ? minutes * 60 : null;
 }
 
-function syncInputsFromDuration(duration) {
-  const hours = Math.floor(duration / 3600);
-  const minutes = Math.floor((duration % 3600) / 60);
-  const seconds = duration % 60;
-
-  hoursInput.value = hours;
-  minutesInput.value = minutes;
-  secondsInput.value = seconds;
+function updatePresetState() {
+  const remainingMinutes = timerDuration / 60;
+  presetButtons.forEach((button) => {
+    const selected = Number(button.dataset.presetMinutes) === remainingMinutes;
+    button.classList.toggle('is-selected', selected);
+    button.setAttribute('aria-selected', String(selected));
+  });
 }
 
 function setTimerDuration(duration) {
   timerDuration = Math.max(0, duration);
   timerRemaining = timerDuration;
-  syncInputsFromDuration(timerDuration);
+  updatePresetState();
   updateTimerDisplay();
 }
 
 function updateTimerDisplay() {
+  if (editingTimer) return;
   timerDisplay.textContent = formatTime(timerRemaining);
+}
+
+function exitTimerEditMode() {
+  editingTimer = false;
+  timerDisplay.classList.remove('is-editing');
+}
+
+function selectTimerText() {
+  const range = document.createRange();
+  range.selectNodeContents(timerDisplay);
+  const selection = window.getSelection();
+  selection.removeAllRanges();
+  selection.addRange(range);
+}
+
+function commitTimerEdit() {
+  exitTimerEditMode();
+
+  const duration = parseTimerText(timerDisplay.textContent);
+  if (duration === null || duration <= 0) {
+    timerStatus.textContent = 'Invalid';
+    updateTimerDisplay();
+    return false;
+  }
+
+  timerStatus.textContent = 'Ready';
+  setTimerDuration(duration);
+  return true;
 }
 
 function setToggleState(
@@ -125,7 +159,7 @@ function tickTimer() {
 function startTimer() {
   if (!timerInterval) {
     if (timerRemaining <= 0) {
-      timerRemaining = readTimerInputs();
+      timerRemaining = parseTimerText(timerDisplay.textContent) || timerDuration;
       timerDuration = timerRemaining;
     }
 
@@ -136,11 +170,18 @@ function startTimer() {
     timerStatus.textContent = 'Running';
     timerPane.classList.add('is-running');
     setToggleState(timerToggle, true, 'Pause timer', 'Start timer');
+    if (soundMode === 'metronome' && !metroRunning) {
+      startMetronome();
+    }
     tickTimer();
   }
 }
 
 function toggleTimer() {
+  if ((editingTimer || timerStatus.textContent === 'Editing') && !commitTimerEdit()) {
+    return;
+  }
+
   if (timerInterval) {
     stopTimer('Paused');
     return;
@@ -151,12 +192,17 @@ function toggleTimer() {
 
 function handleTimerInput() {
   stopTimer('Ready');
-  setTimerDuration(readTimerInputs());
+  const duration = parseTimerText(timerDisplay.textContent);
+  if (duration !== null) {
+    setTimerDuration(duration);
+  }
 }
 
 function nudgeTimerMinutes(direction) {
+  exitTimerEditMode();
+  timerDisplay.blur();
   stopTimer('Ready');
-  setTimerDuration(Math.max(0, readTimerInputs() + direction * 60));
+  setTimerDuration(Math.max(0, timerDuration + direction * 60));
 }
 
 function setBpm(value) {
@@ -334,18 +380,45 @@ function toggleMetronome() {
   startMetronome();
 }
 
-[hoursInput, minutesInput, secondsInput].forEach((input) => {
-  input.addEventListener('change', handleTimerInput);
-  input.addEventListener('input', () => {
-    stopTimer('Editing');
-    timerRemaining = readTimerInputs();
-    timerDuration = timerRemaining;
+timerDisplay.addEventListener('focus', () => {
+  stopTimer('Editing');
+  editingTimer = true;
+  timerDisplay.classList.add('is-editing');
+  window.setTimeout(selectTimerText, 0);
+});
+
+timerDisplay.addEventListener('blur', commitTimerEdit);
+
+timerDisplay.addEventListener('keydown', (event) => {
+  if (event.key === 'Enter') {
+    event.preventDefault();
+    timerDisplay.blur();
+  }
+
+  if (event.key === 'Escape') {
+    event.preventDefault();
+    editingTimer = false;
+    timerDisplay.classList.remove('is-editing');
     updateTimerDisplay();
+    timerDisplay.blur();
+  }
+});
+
+timerDisplay.addEventListener('input', handleTimerInput);
+
+presetButtons.forEach((button) => {
+  button.addEventListener('click', () => {
+    exitTimerEditMode();
+    timerDisplay.blur();
+    stopTimer('Ready');
+    setTimerDuration(Number(button.dataset.presetMinutes) * 60);
   });
 });
 
 timerToggle.addEventListener('click', toggleTimer);
 timerReset.addEventListener('click', () => {
+  exitTimerEditMode();
+  timerDisplay.blur();
   stopTimer('Ready');
   timerRemaining = timerDuration;
   updateTimerDisplay();
