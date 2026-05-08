@@ -4,11 +4,19 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Timer / Metronome</title>
-    <link rel="stylesheet" href="./styles.css?v=metro-pause" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@500;600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="./styles.css?v=centered-numbers" />
   </head>
   <body>
     <main class="app" aria-label="Timer and sound workspace">
       <section class="pane timer-pane" aria-labelledby="timer-title">
+        <svg class="timer-progress" aria-hidden="true">
+          <path class="timer-progress-track" />
+          <path class="timer-progress-line" />
+        </svg>
+
         <header class="pane-header">
           <h1 id="timer-title">Timer</h1>
           <span class="status" id="timer-status">Ready</span>
@@ -24,7 +32,7 @@
           contenteditable="true"
           inputmode="numeric"
           spellcheck="false"
-        >25:00</div>
+        >30:00</div>
 
         <div class="preset-tabs" role="tablist" aria-label="Timer presets">
           <button class="preset-tab" type="button" data-preset-minutes="5">5 min</button>
@@ -41,8 +49,8 @@
         <footer class="controls">
           <button class="control play-toggle" id="timer-toggle" type="button" aria-label="Start timer" aria-pressed="false">
             <span class="symbol" aria-hidden="true">
-              <span class="symbol-icon play-icon">▶</span>
-              <span class="symbol-icon pause-icon">Ⅱ</span>
+              <span class="symbol-icon play-icon"></span>
+              <span class="symbol-icon pause-icon"></span>
             </span>
             <span class="control-label">Start</span>
           </button>
@@ -90,8 +98,8 @@
           <footer class="controls metro-controls">
             <button class="control play-toggle" id="metro-toggle" type="button" aria-label="Start metronome" aria-pressed="false">
               <span class="symbol" aria-hidden="true">
-                <span class="symbol-icon play-icon">▶</span>
-                <span class="symbol-icon pause-icon">Ⅱ</span>
+                <span class="symbol-icon play-icon"></span>
+                <span class="symbol-icon pause-icon"></span>
               </span>
               <span class="control-label">Start</span>
             </button>
@@ -122,6 +130,6 @@
       </section>
     </main>
 
-    <script src="./app.js?v=metro-pause"></script>
+    <script src="./app.js?v=timer-30-corners"></script>
   </body>
 </html>

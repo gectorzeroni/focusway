@@ -6,6 +6,9 @@ const timerToggle = document.querySelector('#timer-toggle');
 const timerReset = document.querySelector('#timer-reset');
 const timerMinus = document.querySelector('#timer-minus');
 const timerPlus = document.querySelector('#timer-plus');
+const timerProgress = document.querySelector('.timer-progress');
+const timerProgressTrack = document.querySelector('.timer-progress-track');
+const timerProgressLine = document.querySelector('.timer-progress-line');
 
 const metroPane = document.querySelector('.metronome-pane');
 const metroStatus = document.querySelector('#metro-status');
@@ -22,11 +25,14 @@ const spotifyForm = document.querySelector('#spotify-form');
 const spotifyInput = document.querySelector('#spotify-input');
 const spotifyFrame = document.querySelector('#spotify-frame');
 
-let timerDuration = 25 * 60;
+let timerDuration = 30 * 60;
 let timerRemaining = timerDuration;
 let timerInterval = null;
 let timerEndsAt = 0;
 let editingTimer = false;
+let timerProgressPathLength = 0;
+let timerProgressWidth = 0;
+let timerProgressHeight = 0;
 
 let audioContext = null;
 let metroTimer = null;
@@ -89,11 +95,60 @@ function setTimerDuration(duration) {
   timerRemaining = timerDuration;
   updatePresetState();
   updateTimerDisplay();
+  updateTimerProgress();
 }
 
 function updateTimerDisplay() {
   if (editingTimer) return;
   timerDisplay.textContent = formatTime(timerRemaining);
+}
+
+function updateTimerProgressPath() {
+  const { width, height } = timerProgress.getBoundingClientRect();
+  const roundedWidth = Math.round(width);
+  const roundedHeight = Math.round(height);
+
+  if (!roundedWidth || !roundedHeight) return;
+  if (roundedWidth === timerProgressWidth && roundedHeight === timerProgressHeight) return;
+
+  timerProgressWidth = roundedWidth;
+  timerProgressHeight = roundedHeight;
+
+  const strokeWidth = parseFloat(getComputedStyle(timerProgressLine).strokeWidth) || 12;
+  const inset = strokeWidth / 2;
+  const paneRadius = parseFloat(getComputedStyle(timerPane).borderTopLeftRadius) || 24;
+  const radius = Math.max(inset, paneRadius - inset);
+  const right = roundedWidth - inset;
+  const bottom = roundedHeight - inset;
+  const centerY = roundedHeight / 2;
+
+  const path = [
+    `M ${right} ${centerY}`,
+    `V ${inset + radius}`,
+    `Q ${right} ${inset} ${right - radius} ${inset}`,
+    `H ${inset + radius}`,
+    `Q ${inset} ${inset} ${inset} ${inset + radius}`,
+    `V ${bottom - radius}`,
+    `Q ${inset} ${bottom} ${inset + radius} ${bottom}`,
+    `H ${right - radius}`,
+    `Q ${right} ${bottom} ${right} ${bottom - radius}`,
+    `V ${centerY}`,
+  ].join(' ');
+
+  timerProgress.setAttribute('viewBox', `0 0 ${roundedWidth} ${roundedHeight}`);
+  timerProgressTrack.setAttribute('d', path);
+  timerProgressLine.setAttribute('d', path);
+  timerProgressPathLength = timerProgressLine.getTotalLength();
+}
+
+function updateTimerProgress() {
+  updateTimerProgressPath();
+  const remainingProgress = timerDuration > 0 ? clamp(timerRemaining / timerDuration, 0, 1) : 0;
+  const hue = Math.round(130 * clamp((remainingProgress - 0.2) / 0.8, 0, 1));
+  const visibleLength = timerProgressPathLength * remainingProgress;
+  timerProgressLine.style.strokeDasharray = `${visibleLength} ${timerProgressPathLength}`;
+  timerProgressLine.style.strokeDashoffset = 0;
+  timerPane.style.setProperty('--timer-color', `hsl(${hue} 81% 39%)`);
 }
 
 function exitTimerEditMode() {
@@ -154,6 +209,7 @@ function stopTimer(label = 'Paused') {
 function tickTimer() {
   timerRemaining = Math.max(0, Math.ceil((timerEndsAt - Date.now()) / 1000));
   updateTimerDisplay();
+  updateTimerProgress();
 
   if (timerRemaining <= 0) {
     stopTimer('Done');
@@ -430,6 +486,7 @@ timerReset.addEventListener('click', () => {
   stopTimer('Ready');
   timerRemaining = timerDuration;
   updateTimerDisplay();
+  updateTimerProgress();
 });
 timerMinus.addEventListener('click', () => nudgeTimerMinutes(-1));
 timerPlus.addEventListener('click', () => nudgeTimerMinutes(1));
@@ -447,6 +504,12 @@ soundModeButtons.forEach((button) => {
 spotifyForm.addEventListener('submit', (event) => {
   event.preventDefault();
   loadSpotify(spotifyInput.value);
+});
+
+window.addEventListener('resize', () => {
+  timerProgressWidth = 0;
+  timerProgressHeight = 0;
+  updateTimerProgress();
 });
 
 setTimerDuration(timerDuration);
