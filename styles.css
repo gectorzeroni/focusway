@@ -125,7 +125,7 @@ input {
   top: 50%;
   left: 50%;
   text-align: center;
-  font-size: clamp(5rem, 9.8vw, 8.75rem);
+  font-size: clamp(5.5rem, 10.8vw, 10rem);
   transform: translate(-50%, -50%) scale(1);
 }
 
@@ -378,7 +378,7 @@ input {
   border: 0;
   background: transparent;
   text-align: center;
-  font-size: clamp(5rem, 9.8vw, 8.75rem);
+  font-size: clamp(5.5rem, 10.8vw, 10rem);
   outline: 0;
   appearance: textfield;
 }
