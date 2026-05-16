@@ -7,6 +7,7 @@
   --green: #13b233;
   --timer-color: var(--green);
   --control-size: 5rem;
+  --control-bottom: clamp(1.9rem, 5.5vh, 3.2rem);
 }
 
 * {
@@ -44,6 +45,7 @@ input {
 }
 
 .pane {
+  --pane-padding: clamp(1rem, 2.3vw, 2rem);
   position: relative;
   display: grid;
   min-width: 0;
@@ -51,7 +53,7 @@ input {
   overflow: hidden;
   border-radius: 1.5rem;
   background: var(--panel);
-  padding: clamp(1rem, 2.3vw, 2rem);
+  padding: var(--pane-padding);
 }
 
 .timer-pane {
@@ -250,12 +252,12 @@ input {
   display: grid;
   grid-template-columns: var(--control-size);
   justify-content: center;
-  margin-bottom: clamp(1.9rem, 5.5vh, 3.2rem);
+  margin-bottom: var(--control-bottom);
 }
 
 .timer-pane > .controls {
   position: absolute;
-  bottom: clamp(1.9rem, 5.5vh, 3.2rem);
+  bottom: var(--control-bottom);
   left: 50%;
   margin: 0;
   transform: translateX(-50%);
@@ -401,7 +403,7 @@ input {
 
 .bpm-wrap span {
   position: absolute;
-  top: calc(100% + 1.25rem);
+  top: calc(100% + 8px);
   left: 50%;
   transform: translateX(-50%);
 }
@@ -444,7 +446,7 @@ input[type='range'] {
 
 .metro-controls {
   position: absolute;
-  bottom: clamp(1.9rem, 5.5vh, 3.2rem);
+  bottom: max(0.75rem, calc(var(--control-bottom) - var(--pane-padding)));
   left: 50%;
   margin: 0;
   transform: translateX(-50%);
