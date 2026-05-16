@@ -12,10 +12,26 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@500;600&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="./styles.css?v=aligned-play-controls" />
+    <link rel="stylesheet" href="./styles.css?v=chart-hover" />
   </head>
   <body>
     <main class="app" aria-label="Timer and sound workspace">
+      <section class="performance-bar" aria-label="Performance hours feature">
+        <div class="performance-tally">
+          <button class="tally-button" id="tally-button" type="button" aria-label="Add performance mark">
+            <span class="tally-empty" id="tally-empty">Click to add tick</span>
+            <svg class="tally-board" id="tally-board" viewBox="0 0 360 64" preserveAspectRatio="xMinYMid meet" role="img" aria-label="Performance marks"></svg>
+          </button>
+          <button class="tally-remove" id="tally-remove" type="button" aria-label="Remove latest performance mark"></button>
+        </div>
+
+        <time class="performance-date" id="performance-date"></time>
+
+        <button class="mini-chart-button" id="mini-chart-button" type="button" aria-label="Open performance hours chart">
+          <svg class="mini-chart" id="mini-chart" viewBox="0 0 220 64" preserveAspectRatio="xMaxYMid meet" aria-hidden="true"></svg>
+        </button>
+      </section>
+
       <section class="pane timer-pane" aria-labelledby="timer-title">
         <svg class="timer-progress" aria-hidden="true">
           <path class="timer-progress-track" />
@@ -135,6 +151,28 @@
       </section>
     </main>
 
-    <script src="./app.js?v=timer-30-corners"></script>
+    <div class="chart-modal" id="chart-modal" hidden>
+      <div class="chart-dialog" role="dialog" aria-modal="true" aria-labelledby="chart-title">
+        <header class="chart-header">
+          <div>
+            <h2 id="chart-title">Performance hours feature</h2>
+            <span id="chart-subtitle">Today</span>
+          </div>
+          <button class="chart-close" id="chart-close" type="button" aria-label="Close chart"></button>
+        </header>
+
+        <div class="chart-summary">
+          <strong id="chart-total">0</strong>
+          <div class="chart-range" role="tablist" aria-label="Performance range">
+            <button class="chart-range-button is-selected" type="button" role="tab" aria-selected="true" data-chart-range="today">Today</button>
+            <button class="chart-range-button" type="button" role="tab" aria-selected="false" data-chart-range="previous">Previous day</button>
+            <button class="chart-range-button" type="button" role="tab" aria-selected="false" data-chart-range="last5">Last 5 days</button>
+          </div>
+        </div>
+        <svg class="large-chart" id="large-chart" viewBox="0 0 720 300" role="img" aria-label="Performance marks by hour"></svg>
+      </div>
+    </div>
+
+    <script src="./app.js?v=chart-hover"></script>
   </body>
 </html>

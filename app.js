@@ -9,6 +9,18 @@ const timerPlus = document.querySelector('#timer-plus');
 const timerProgress = document.querySelector('.timer-progress');
 const timerProgressTrack = document.querySelector('.timer-progress-track');
 const timerProgressLine = document.querySelector('.timer-progress-line');
+const performanceDate = document.querySelector('#performance-date');
+const tallyButton = document.querySelector('#tally-button');
+const tallyRemove = document.querySelector('#tally-remove');
+const tallyBoard = document.querySelector('#tally-board');
+const miniChartButton = document.querySelector('#mini-chart-button');
+const miniChart = document.querySelector('#mini-chart');
+const chartModal = document.querySelector('#chart-modal');
+const chartClose = document.querySelector('#chart-close');
+const chartSubtitle = document.querySelector('#chart-subtitle');
+const chartTotal = document.querySelector('#chart-total');
+const chartRangeButtons = [...document.querySelectorAll('[data-chart-range]')];
+const largeChart = document.querySelector('#large-chart');
 
 const metroPane = document.querySelector('.metronome-pane');
 const metroStatus = document.querySelector('#metro-status');
@@ -41,6 +53,9 @@ let metronomeStartedByTimer = false;
 let currentBeat = 0;
 let soundMode = 'metronome';
 let currentSpotifyEmbedSrc = spotifyFrame.src;
+let performanceDays = readPerformanceDays();
+let performanceMarks = [];
+let chartRange = 'today';
 
 const spotifyTypes = new Set(['album', 'artist', 'episode', 'playlist', 'show', 'track']);
 
@@ -295,6 +310,355 @@ function storeValue(key, value) {
   }
 }
 
+function todayKey(date = new Date()) {
+  return [
+    date.getFullYear(),
+    pad(date.getMonth() + 1),
+    pad(date.getDate()),
+  ].join('-');
+}
+
+function addDays(date, amount) {
+  const nextDate = new Date(date);
+  nextDate.setDate(nextDate.getDate() + amount);
+  return nextDate;
+}
+
+function formatPerformanceDate(date = new Date()) {
+  return date.toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+}
+
+function formatShortDate(date = new Date()) {
+  return date.toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+  });
+}
+
+function formatHourLabel(hour) {
+  return `${pad(hour)}:00`;
+}
+
+function normalizePerformanceDays(value) {
+  if (Array.isArray(value)) {
+    return value.reduce((days, mark) => {
+      if (!Number.isFinite(mark)) return days;
+
+      const key = todayKey(new Date(mark));
+      days[key] = days[key] || [];
+      days[key].push(mark);
+      return days;
+    }, {});
+  }
+
+  if (!value || typeof value !== 'object') return {};
+
+  return Object.entries(value).reduce((days, [key, marks]) => {
+    if (!Array.isArray(marks)) return days;
+
+    const validMarks = marks.filter((mark) => (
+      Number.isFinite(mark) && todayKey(new Date(mark)) === key
+    ));
+
+    if (validMarks.length) {
+      days[key] = validMarks;
+    }
+
+    return days;
+  }, {});
+}
+
+function readPerformanceDays() {
+  try {
+    const storedDays = window.localStorage.getItem('focusway.performanceDays');
+    if (storedDays) {
+      return normalizePerformanceDays(JSON.parse(storedDays));
+    }
+
+    const storedMarks = JSON.parse(window.localStorage.getItem('focusway.performanceMarks') || '[]');
+    return normalizePerformanceDays(storedMarks);
+  } catch {
+    return {};
+  }
+}
+
+function ensureTodayPerformanceMarks() {
+  const key = todayKey();
+  performanceDays[key] = performanceDays[key] || [];
+  performanceMarks = performanceDays[key];
+  return performanceMarks;
+}
+
+function storePerformanceDays() {
+  try {
+    window.localStorage.setItem('focusway.performanceDays', JSON.stringify(performanceDays));
+    window.localStorage.removeItem('focusway.performanceMarks');
+  } catch {
+    return null;
+  }
+}
+
+function clearSvg(svg) {
+  while (svg.firstChild) {
+    svg.removeChild(svg.firstChild);
+  }
+}
+
+function makeSvgElement(name, attributes = {}) {
+  const element = document.createElementNS('http://www.w3.org/2000/svg', name);
+  Object.entries(attributes).forEach(([key, value]) => {
+    element.setAttribute(key, value);
+  });
+  return element;
+}
+
+function renderTally() {
+  ensureTodayPerformanceMarks();
+  clearSvg(tallyBoard);
+
+  const count = performanceMarks.length;
+  tallyButton.setAttribute('aria-label', `Add performance mark, ${count} today`);
+  tallyButton.classList.toggle('has-marks', count > 0);
+  tallyRemove.disabled = count === 0;
+
+  if (!count) {
+    return;
+  }
+
+  tallyBoard.style.opacity = '1';
+
+  const groupGap = 80;
+  const lineGap = 18;
+  const startX = 8;
+  const shownCount = Math.min(count, 12);
+  const hiddenCount = count - shownCount;
+
+  for (let index = 0; index < shownCount; index += 1) {
+    const group = Math.floor(index / 3);
+    const offset = index % 3;
+    const x = startX + group * groupGap + offset * lineGap;
+    tallyBoard.appendChild(
+      makeSvgElement('line', { class: 'tally-mark', x1: x, y1: 16, x2: x, y2: 48 }),
+    );
+
+    if (offset === 2) {
+      tallyBoard.appendChild(
+        makeSvgElement('line', { class: 'tally-cross', x1: x - lineGap * 2 - 6, y1: 32, x2: x + 6, y2: 32 }),
+      );
+    }
+  }
+
+  if (hiddenCount > 0) {
+    const text = makeSvgElement('text', { class: 'chart-label', x: 330, y: 38, 'text-anchor': 'middle' });
+    text.textContent = `+${hiddenCount}`;
+    tallyBoard.appendChild(text);
+  }
+}
+
+function marksForDay(key) {
+  return performanceDays[key] || [];
+}
+
+function hourlyPerformance(key = todayKey()) {
+  const bins = Array.from({ length: 24 }, () => 0);
+  marksForDay(key).forEach((mark) => {
+    const date = new Date(mark);
+    if (todayKey(date) === key) {
+      bins[date.getHours()] += 1;
+    }
+  });
+  return bins;
+}
+
+function recentDayKeys(totalDays) {
+  const today = new Date();
+  return Array.from({ length: totalDays }, (_, index) => addDays(today, index - totalDays + 1));
+}
+
+function lastFiveDayPerformance() {
+  return recentDayKeys(5).map((date) => {
+    const key = todayKey(date);
+    return {
+      label: formatShortDate(date),
+      value: marksForDay(key).length,
+    };
+  });
+}
+
+function chartPoints(width, height, inset, bins) {
+  const max = Math.max(1, ...bins);
+  return bins.map((value, index) => {
+    const denominator = Math.max(1, bins.length - 1);
+    const x = inset + (index / denominator) * (width - inset * 2);
+    const y = height - inset - (value / max) * (height - inset * 2);
+    return { x, y, value, index };
+  });
+}
+
+function renderChart(svg, width, height, bins, showLabels = false, labels = [], hoverLabels = []) {
+  clearSvg(svg);
+
+  const inset = showLabels ? 42 : 18;
+  const points = chartPoints(width, height, inset, bins);
+  const hasData = points.some((point) => point.value > 0);
+  const path = points.map((point) => `${point.x.toFixed(1)},${point.y.toFixed(1)}`).join(' ');
+  svg.classList.toggle('is-empty', !hasData);
+
+  if (showLabels) {
+    svg.append(
+      makeSvgElement('line', { class: 'chart-grid', x1: inset, y1: inset, x2: inset, y2: height - inset }),
+      makeSvgElement('line', { class: 'chart-axis', x1: inset, y1: height - inset, x2: width - inset, y2: height - inset }),
+    );
+  }
+
+  svg.appendChild(makeSvgElement('polyline', { class: 'chart-line', points: path }));
+
+  points.forEach((point) => {
+    if (point.value > 0) {
+      svg.appendChild(makeSvgElement('circle', { class: 'chart-dot', cx: point.x, cy: point.y, r: showLabels ? 5 : 4 }));
+    }
+  });
+
+  if (showLabels) {
+    labels.forEach(([index, label]) => {
+      const point = points[index];
+      if (!point) return;
+
+      const text = makeSvgElement('text', { class: 'chart-label', x: point.x, y: height - 12, 'text-anchor': 'middle' });
+      text.textContent = label;
+      svg.appendChild(text);
+    });
+  }
+
+  const hoverGroup = makeSvgElement('g', { class: 'chart-hover', 'aria-hidden': 'true' });
+  hoverGroup.append(
+    makeSvgElement('line', { class: 'chart-hover-line', x1: inset, y1: inset, x2: inset, y2: height - inset }),
+    makeSvgElement('circle', { class: 'chart-hover-dot', cx: inset, cy: height - inset, r: showLabels ? 5 : 4 }),
+    makeSvgElement('text', { class: 'chart-hover-label', x: inset, y: inset - 10, 'text-anchor': 'middle' }),
+  );
+  svg.appendChild(hoverGroup);
+  svg.__chartMeta = { width, height, inset, points, hoverLabels };
+}
+
+function chartConfigForRange(range) {
+  if (range === 'previous') {
+    const date = addDays(new Date(), -1);
+    const key = todayKey(date);
+    return {
+      bins: hourlyPerformance(key),
+      labels: [[0, '00'], [6, '06'], [12, '12'], [18, '18'], [23, '23']],
+      hoverLabels: Array.from({ length: 24 }, (_, hour) => formatHourLabel(hour)),
+      subtitle: `${formatPerformanceDate(date)} · previous day`,
+      total: marksForDay(key).length,
+    };
+  }
+
+  if (range === 'last5') {
+    const days = lastFiveDayPerformance();
+    return {
+      bins: days.map((day) => day.value),
+      labels: days.map((day, index) => [index, day.label]),
+      hoverLabels: days.map((day) => day.label),
+      subtitle: 'Last 5 days',
+      total: days.reduce((sum, day) => sum + day.value, 0),
+    };
+  }
+
+  return {
+    bins: hourlyPerformance(todayKey()),
+    labels: [[0, '00'], [6, '06'], [12, '12'], [18, '18'], [23, '23']],
+    hoverLabels: Array.from({ length: 24 }, (_, hour) => formatHourLabel(hour)),
+    subtitle: `${formatPerformanceDate()} · today`,
+    total: marksForDay(todayKey()).length,
+  };
+}
+
+function renderModalChart() {
+  const config = chartConfigForRange(chartRange);
+  renderChart(largeChart, 720, 300, config.bins, true, config.labels, config.hoverLabels);
+  chartTotal.textContent = config.total;
+  chartSubtitle.textContent = config.subtitle;
+
+  chartRangeButtons.forEach((button) => {
+    const selected = button.dataset.chartRange === chartRange;
+    button.classList.toggle('is-selected', selected);
+    button.setAttribute('aria-selected', String(selected));
+  });
+}
+
+function renderPerformance() {
+  ensureTodayPerformanceMarks();
+  const todayConfig = chartConfigForRange('today');
+  renderTally();
+  renderChart(miniChart, 220, 64, todayConfig.bins, false, [], todayConfig.hoverLabels);
+  renderModalChart();
+  performanceDate.dateTime = todayKey();
+  performanceDate.textContent = formatPerformanceDate();
+}
+
+function updateChartHover(svg, event) {
+  const meta = svg.__chartMeta;
+  if (!meta || !meta.points.length) return;
+
+  const rect = svg.getBoundingClientRect();
+  const pointerX = ((event.clientX - rect.left) / rect.width) * meta.width;
+  const nearest = meta.points.reduce((closest, point) => (
+    Math.abs(point.x - pointerX) < Math.abs(closest.x - pointerX) ? point : closest
+  ), meta.points[0]);
+  const hoverGroup = svg.querySelector('.chart-hover');
+  if (!hoverGroup) return;
+
+  const label = `${meta.hoverLabels[nearest.index] || nearest.index}: ${nearest.value} ${nearest.value === 1 ? 'tick' : 'ticks'}`;
+  const labelY = Math.max(12, nearest.y - (meta.height > 100 ? 14 : 8));
+  const labelX = clamp(nearest.x, 34, meta.width - 34);
+
+  hoverGroup.classList.add('is-visible');
+  hoverGroup.querySelector('.chart-hover-line').setAttribute('x1', nearest.x);
+  hoverGroup.querySelector('.chart-hover-line').setAttribute('x2', nearest.x);
+  hoverGroup.querySelector('.chart-hover-dot').setAttribute('cx', nearest.x);
+  hoverGroup.querySelector('.chart-hover-dot').setAttribute('cy', nearest.y);
+
+  const labelNode = hoverGroup.querySelector('.chart-hover-label');
+  labelNode.setAttribute('x', labelX);
+  labelNode.setAttribute('y', labelY);
+  labelNode.textContent = label;
+}
+
+function hideChartHover(svg) {
+  svg.querySelector('.chart-hover')?.classList.remove('is-visible');
+}
+
+function addPerformanceMark() {
+  ensureTodayPerformanceMarks();
+  performanceMarks.push(Date.now());
+  storePerformanceDays();
+  renderPerformance();
+}
+
+function removePerformanceMark() {
+  ensureTodayPerformanceMarks();
+  if (!performanceMarks.length) return;
+
+  performanceMarks.pop();
+  storePerformanceDays();
+  renderPerformance();
+}
+
+function openChartModal() {
+  renderModalChart();
+  chartModal.hidden = false;
+  chartClose.focus();
+}
+
+function closeChartModal() {
+  chartModal.hidden = true;
+  miniChartButton.focus();
+}
+
 function parseSpotifyInput(value) {
   const input = value.trim();
   if (!input) return null;
@@ -496,6 +860,33 @@ bpmSlider.addEventListener('input', () => setBpm(bpmSlider.value));
 bpmMinus.addEventListener('click', () => setBpm(parseInt(bpmInput.value, 10) - 1));
 bpmPlus.addEventListener('click', () => setBpm(parseInt(bpmInput.value, 10) + 1));
 metroToggle.addEventListener('click', toggleMetronome);
+tallyButton.addEventListener('click', addPerformanceMark);
+tallyRemove.addEventListener('click', removePerformanceMark);
+miniChartButton.addEventListener('click', openChartModal);
+chartClose.addEventListener('click', closeChartModal);
+chartModal.addEventListener('click', (event) => {
+  if (event.target === chartModal) {
+    closeChartModal();
+  }
+});
+
+chartRangeButtons.forEach((button) => {
+  button.addEventListener('click', () => {
+    chartRange = button.dataset.chartRange;
+    renderModalChart();
+  });
+});
+
+[miniChart, largeChart].forEach((chart) => {
+  chart.addEventListener('mousemove', (event) => updateChartHover(chart, event));
+  chart.addEventListener('mouseleave', () => hideChartHover(chart));
+});
+
+window.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && !chartModal.hidden) {
+    closeChartModal();
+  }
+});
 
 soundModeButtons.forEach((button) => {
   button.addEventListener('click', () => setSoundMode(button.dataset.soundMode));
@@ -526,3 +917,4 @@ if (storedSpotify) {
 }
 
 setSoundMode(readStoredValue('focusway.soundMode') || 'metronome');
+renderPerformance();

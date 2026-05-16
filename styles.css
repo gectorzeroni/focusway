@@ -35,13 +35,249 @@ input {
   font: inherit;
 }
 
+button {
+  -webkit-tap-highlight-color: transparent;
+}
+
 .app {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
   gap: 0.75rem;
   min-height: 100vh;
+  overflow-x: hidden;
   padding: 0.75rem;
   background: var(--paper);
+}
+
+.performance-bar {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 1.25rem;
+  min-width: 0;
+  min-height: 5rem;
+  overflow: hidden;
+  border-radius: 1.5rem;
+  background: var(--panel);
+  padding: 0.75rem 16px;
+}
+
+.performance-tally {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 1rem;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.performance-tally .tally-button {
+  position: relative;
+  flex: 0 1 auto;
+  width: auto;
+  justify-self: start;
+}
+
+.tally-remove {
+  position: relative;
+  flex: 0 0 auto;
+  width: 2rem;
+  height: 2rem;
+  border: 0;
+  border-radius: 50%;
+  background: #ffffff;
+  color: var(--ink);
+  cursor: pointer;
+  transform: scale(1);
+  transition:
+    color 180ms cubic-bezier(0.2, 0, 0, 1),
+    opacity 180ms cubic-bezier(0.2, 0, 0, 1),
+    transform 180ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+.tally-remove::before {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0.9rem;
+  height: 2px;
+  border-radius: 999px;
+  background: currentColor;
+  content: "";
+  transform: translate(-50%, -50%);
+}
+
+.tally-remove:hover,
+.tally-remove:focus-visible {
+  color: var(--green);
+  outline: 0;
+}
+
+.tally-remove:active {
+  transform: scale(0.94);
+}
+
+.tally-remove:disabled {
+  display: none;
+  cursor: default;
+  opacity: 0.28;
+}
+
+.performance-date {
+  justify-self: center;
+  color: var(--ink);
+  font-size: 1rem;
+  font-weight: 500;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.tally-button,
+.mini-chart-button {
+  display: grid;
+  min-width: 0;
+  height: 3.5rem;
+  place-items: center;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  transform: scale(1);
+  transition:
+    background 180ms cubic-bezier(0.2, 0, 0, 1),
+    color 180ms cubic-bezier(0.2, 0, 0, 1),
+    transform 180ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+.tally-empty {
+  position: absolute;
+  left: 0;
+  color: var(--muted);
+  font-size: 1rem;
+  font-weight: 500;
+  line-height: 1;
+  transition: color 180ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+.tally-button.has-marks .tally-empty {
+  display: none;
+}
+
+.mini-chart-button {
+  justify-self: end;
+  width: min(100%, 24rem);
+}
+
+.tally-button:hover,
+.tally-button:focus-visible,
+.mini-chart-button:hover,
+.mini-chart-button:focus-visible {
+  color: var(--green);
+  outline: 0;
+}
+
+.tally-button:active,
+.mini-chart-button:active {
+  transform: scale(0.985);
+}
+
+.tally-board,
+.mini-chart {
+  display: block;
+  height: 2.65rem;
+  overflow: hidden;
+}
+
+.mini-chart {
+  width: 100%;
+}
+
+.tally-board {
+  width: auto;
+  max-width: 25rem;
+  overflow: visible;
+}
+
+.tally-mark {
+  stroke: currentColor;
+  stroke-width: 5;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.tally-cross {
+  stroke: var(--green);
+  stroke-width: 4;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.chart-axis,
+.chart-grid {
+  stroke: rgba(0, 0, 0, 0.12);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.chart-line {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.mini-chart.is-empty .chart-line,
+.large-chart.is-empty .chart-line {
+  stroke: var(--quiet);
+  stroke-width: 3;
+}
+
+.chart-dot {
+  fill: var(--green);
+}
+
+.chart-hover {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms ease;
+}
+
+.chart-hover.is-visible {
+  opacity: 1;
+}
+
+.chart-hover-line {
+  stroke: var(--green);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.chart-hover-dot {
+  fill: var(--green);
+}
+
+.chart-hover-label {
+  fill: var(--ink);
+  font-size: 0.8rem;
+  font-weight: 600;
+  paint-order: stroke;
+  stroke: var(--panel);
+  stroke-width: 5;
+  stroke-linejoin: round;
+}
+
+.chart-label {
+  fill: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 500;
 }
 
 .pane {
@@ -49,7 +285,7 @@ input {
   position: relative;
   display: grid;
   min-width: 0;
-  min-height: calc(100vh - 1.5rem);
+  min-height: calc(100vh - 7.25rem);
   overflow: hidden;
   border-radius: 1.5rem;
   background: var(--panel);
@@ -529,10 +765,185 @@ input[type='range'] {
   outline: 0;
 }
 
+.chart-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(12px);
+}
+
+.chart-modal[hidden] {
+  display: none;
+}
+
+.chart-dialog {
+  width: min(100%, 52rem);
+  border-radius: 1.5rem;
+  background: var(--panel);
+  padding: clamp(1rem, 2.3vw, 2rem);
+}
+
+.chart-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.chart-header h2 {
+  margin: 0 0 0.35rem;
+  font-size: 1.4rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.chart-header span {
+  color: var(--muted);
+  font-size: 0.95rem;
+  text-transform: uppercase;
+}
+
+.chart-summary {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(1rem, 4vw, 3rem);
+  margin-bottom: 1.25rem;
+}
+
+.chart-summary strong {
+  font-size: clamp(4.5rem, 10vw, 8rem);
+  font-weight: 600;
+  line-height: 0.9;
+  font-variant-numeric: tabular-nums;
+}
+
+.chart-range {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.chart-range-button {
+  min-height: 1.75rem;
+  border: 0;
+  border-radius: 999px;
+  background: #ffffff;
+  color: var(--ink);
+  cursor: pointer;
+  padding: 0.36rem 1rem 0.3rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  line-height: 1.2;
+  text-transform: uppercase;
+  transform: scale(1);
+  transition:
+    background 180ms cubic-bezier(0.2, 0, 0, 1),
+    color 180ms cubic-bezier(0.2, 0, 0, 1),
+    transform 180ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+.chart-range-button:hover,
+.chart-range-button:focus-visible,
+.chart-range-button.is-selected {
+  background: var(--ink);
+  color: #ffffff;
+  outline: 0;
+}
+
+.chart-range-button:active {
+  transform: scale(0.96);
+}
+
+.chart-close {
+  position: relative;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 0;
+  border-radius: 50%;
+  background: #ffffff;
+  color: var(--ink);
+  cursor: pointer;
+  transition:
+    color 180ms cubic-bezier(0.2, 0, 0, 1),
+    transform 180ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+.chart-close::before,
+.chart-close::after {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 1rem;
+  height: 2px;
+  border-radius: 999px;
+  background: currentColor;
+  content: "";
+}
+
+.chart-close::before {
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.chart-close::after {
+  transform: translate(-50%, -50%) rotate(-45deg);
+}
+
+.chart-close:hover,
+.chart-close:focus-visible {
+  color: var(--green);
+  outline: 0;
+}
+
+.chart-close:active {
+  transform: scale(0.96);
+}
+
+.large-chart {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
 @media (max-width: 800px) {
   .app {
     grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto;
     min-height: 100vh;
+  }
+
+  .performance-bar {
+    grid-template-columns: 1fr;
+    min-height: auto;
+  }
+
+  .performance-tally {
+    justify-content: flex-start;
+  }
+
+  .performance-date {
+    justify-self: start;
+  }
+
+  .tally-button,
+  .mini-chart-button {
+    height: 3.25rem;
+  }
+
+  .chart-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .chart-range {
+    justify-content: flex-start;
+    flex-wrap: wrap;
   }
 
   .pane {
