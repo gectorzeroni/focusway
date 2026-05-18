@@ -21,6 +21,7 @@ const chartSubtitle = document.querySelector('#chart-subtitle');
 const chartTotal = document.querySelector('#chart-total');
 const chartRangeButtons = [...document.querySelectorAll('[data-chart-range]')];
 const largeChart = document.querySelector('#large-chart');
+const chartHistoryList = document.querySelector('#chart-history-list');
 
 const metroPane = document.querySelector('.metronome-pane');
 const metroStatus = document.querySelector('#metro-status');
@@ -318,6 +319,11 @@ function todayKey(date = new Date()) {
   ].join('-');
 }
 
+function dateFromKey(key) {
+  const [year, month, day] = key.split('-').map((part) => parseInt(part, 10));
+  return new Date(year, month - 1, day);
+}
+
 function addDays(date, amount) {
   const nextDate = new Date(date);
   nextDate.setDate(nextDate.getDate() + amount);
@@ -590,12 +596,40 @@ function renderModalChart() {
   });
 }
 
+function renderChartHistory() {
+  while (chartHistoryList.firstChild) {
+    chartHistoryList.removeChild(chartHistoryList.firstChild);
+  }
+
+  const keys = new Set(Object.keys(performanceDays));
+  keys.add(todayKey());
+
+  [...keys]
+    .sort((a, b) => b.localeCompare(a))
+    .forEach((key) => {
+      const row = document.createElement('div');
+      row.className = 'chart-history-row';
+
+      const date = document.createElement('time');
+      date.dateTime = key;
+      date.textContent = formatPerformanceDate(dateFromKey(key));
+
+      const count = marksForDay(key).length;
+      const total = document.createElement('strong');
+      total.textContent = `${count} ${count === 1 ? 'tick' : 'ticks'}`;
+
+      row.append(date, total);
+      chartHistoryList.appendChild(row);
+    });
+}
+
 function renderPerformance() {
   ensureTodayPerformanceMarks();
   const todayConfig = chartConfigForRange('today');
   renderTally();
   renderChart(miniChart, 220, 64, todayConfig.bins, false, [], todayConfig.hoverLabels);
   renderModalChart();
+  renderChartHistory();
   performanceDate.dateTime = todayKey();
   performanceDate.textContent = formatPerformanceDate();
 }
