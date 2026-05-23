@@ -229,8 +229,8 @@ function tickTimer() {
 
   if (timerRemaining <= 0) {
     stopTimer('Done');
-    playTone(880, 0.14, 0.07);
-    setTimeout(() => playTone(660, 0.16, 0.07), 130);
+    playTone(880, 0.16, 0.16);
+    setTimeout(() => playTone(660, 0.18, 0.14), 130);
   }
 }
 
@@ -349,6 +349,26 @@ function formatHourLabel(hour) {
   return `${pad(hour)}:00`;
 }
 
+function formatMarkTime(mark) {
+  return new Date(mark).toLocaleTimeString(undefined, {
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+}
+
+function formatTickCount(count) {
+  return `${count} ${count === 1 ? 'tick' : 'ticks'}`;
+}
+
+function formatMarkTimes(marks) {
+  if (!marks.length) return 'No ticks logged';
+  return marks
+    .slice()
+    .sort((a, b) => a - b)
+    .map(formatMarkTime)
+    .join(', ');
+}
+
 function normalizePerformanceDays(value) {
   if (Array.isArray(value)) {
     return value.reduce((days, mark) => {
@@ -432,6 +452,8 @@ function renderTally() {
   tallyRemove.disabled = count === 0;
 
   if (!count) {
+    tallyBoard.setAttribute('viewBox', '0 0 360 64');
+    tallyBoard.style.width = '';
     return;
   }
 
@@ -440,18 +462,22 @@ function renderTally() {
   const groupGap = 80;
   const lineGap = 18;
   const startX = 8;
+  const strokeInset = 2.5;
   const shownCount = Math.min(count, 12);
   const hiddenCount = count - shownCount;
+  let contentRight = startX + strokeInset;
 
   for (let index = 0; index < shownCount; index += 1) {
     const group = Math.floor(index / 3);
     const offset = index % 3;
     const x = startX + group * groupGap + offset * lineGap;
+    contentRight = Math.max(contentRight, x + strokeInset);
     tallyBoard.appendChild(
       makeSvgElement('line', { class: 'tally-mark', x1: x, y1: 16, x2: x, y2: 48 }),
     );
 
     if (offset === 2) {
+      contentRight = Math.max(contentRight, x + 6 + strokeInset);
       tallyBoard.appendChild(
         makeSvgElement('line', { class: 'tally-cross', x1: x - lineGap * 2 - 6, y1: 32, x2: x + 6, y2: 32 }),
       );
@@ -462,7 +488,11 @@ function renderTally() {
     const text = makeSvgElement('text', { class: 'chart-label', x: 330, y: 38, 'text-anchor': 'middle' });
     text.textContent = `+${hiddenCount}`;
     tallyBoard.appendChild(text);
+    contentRight = 360;
   }
+
+  tallyBoard.setAttribute('viewBox', `0 0 ${contentRight} 64`);
+  tallyBoard.style.width = `${(contentRight / 64) * 2.65}rem`;
 }
 
 function marksForDay(key) {
@@ -480,17 +510,39 @@ function hourlyPerformance(key = todayKey()) {
   return bins;
 }
 
+function hourlyPerformanceDetails(key = todayKey()) {
+  const bins = hourlyPerformance(key);
+  const marksByHour = Array.from({ length: 24 }, () => []);
+
+  marksForDay(key).forEach((mark) => {
+    const date = new Date(mark);
+    if (todayKey(date) === key) {
+      marksByHour[date.getHours()].push(mark);
+    }
+  });
+
+  return {
+    bins,
+    hoverDetails: marksByHour.map((marks, hour) => [
+      `${formatHourLabel(hour)} · ${formatTickCount(marks.length)}`,
+      formatMarkTimes(marks),
+    ]),
+  };
+}
+
 function recentDayKeys(totalDays) {
   const today = new Date();
   return Array.from({ length: totalDays }, (_, index) => addDays(today, index - totalDays + 1));
 }
 
-function lastFiveDayPerformance() {
-  return recentDayKeys(5).map((date) => {
+function recentDayPerformance(totalDays) {
+  return recentDayKeys(totalDays).map((date) => {
     const key = todayKey(date);
+    const marks = marksForDay(key).slice().sort((a, b) => a - b);
     return {
       label: formatShortDate(date),
-      value: marksForDay(key).length,
+      value: marks.length,
+      marks,
     };
   });
 }
@@ -505,7 +557,7 @@ function chartPoints(width, height, inset, bins) {
   });
 }
 
-function renderChart(svg, width, height, bins, showLabels = false, labels = [], hoverLabels = []) {
+function renderChart(svg, width, height, bins, showLabels = false, labels = [], hoverDetails = []) {
   clearSvg(svg);
 
   const inset = showLabels ? 42 : 18;
@@ -524,7 +576,7 @@ function renderChart(svg, width, height, bins, showLabels = false, labels = [], 
   svg.appendChild(makeSvgElement('polyline', { class: 'chart-line', points: path }));
 
   points.forEach((point) => {
-    if (point.value > 0) {
+    if (showLabels && point.value > 0) {
       svg.appendChild(makeSvgElement('circle', { class: 'chart-dot', cx: point.x, cy: point.y, r: showLabels ? 5 : 4 }));
     }
   });
@@ -547,37 +599,58 @@ function renderChart(svg, width, height, bins, showLabels = false, labels = [], 
     makeSvgElement('text', { class: 'chart-hover-label', x: inset, y: inset - 10, 'text-anchor': 'middle' }),
   );
   svg.appendChild(hoverGroup);
-  svg.__chartMeta = { width, height, inset, points, hoverLabels };
+  svg.__chartMeta = { width, height, inset, points, hoverDetails };
 }
 
 function chartConfigForRange(range) {
   if (range === 'previous') {
     const date = addDays(new Date(), -1);
     const key = todayKey(date);
+    const details = hourlyPerformanceDetails(key);
     return {
-      bins: hourlyPerformance(key),
+      bins: details.bins,
       labels: [[0, '00'], [6, '06'], [12, '12'], [18, '18'], [23, '23']],
-      hoverLabels: Array.from({ length: 24 }, (_, hour) => formatHourLabel(hour)),
+      hoverDetails: details.hoverDetails,
       subtitle: `${formatPerformanceDate(date)} · previous day`,
       total: marksForDay(key).length,
     };
   }
 
   if (range === 'last5') {
-    const days = lastFiveDayPerformance();
+    const days = recentDayPerformance(5);
     return {
       bins: days.map((day) => day.value),
       labels: days.map((day, index) => [index, day.label]),
-      hoverLabels: days.map((day) => day.label),
+      hoverDetails: days.map((day) => [
+        `${day.label} · ${formatTickCount(day.value)}`,
+        formatMarkTimes(day.marks),
+      ]),
       subtitle: 'Last 5 days',
       total: days.reduce((sum, day) => sum + day.value, 0),
     };
   }
 
+  if (range === 'last30') {
+    const days = recentDayPerformance(30);
+    return {
+      bins: days.map((day) => day.value),
+      labels: days
+        .map((day, index) => [index, day.label])
+        .filter((_, index) => index === 0 || index === 7 || index === 14 || index === 21 || index === 29),
+      hoverDetails: days.map((day) => [
+        `${day.label} · ${formatTickCount(day.value)}`,
+        formatMarkTimes(day.marks),
+      ]),
+      subtitle: 'Last 30 days',
+      total: days.reduce((sum, day) => sum + day.value, 0),
+    };
+  }
+
+  const details = hourlyPerformanceDetails(todayKey());
   return {
-    bins: hourlyPerformance(todayKey()),
+    bins: details.bins,
     labels: [[0, '00'], [6, '06'], [12, '12'], [18, '18'], [23, '23']],
-    hoverLabels: Array.from({ length: 24 }, (_, hour) => formatHourLabel(hour)),
+    hoverDetails: details.hoverDetails,
     subtitle: `${formatPerformanceDate()} · today`,
     total: marksForDay(todayKey()).length,
   };
@@ -585,7 +658,7 @@ function chartConfigForRange(range) {
 
 function renderModalChart() {
   const config = chartConfigForRange(chartRange);
-  renderChart(largeChart, 720, 300, config.bins, true, config.labels, config.hoverLabels);
+  renderChart(largeChart, 720, 300, config.bins, true, config.labels, config.hoverDetails);
   chartTotal.textContent = config.total;
   chartSubtitle.textContent = config.subtitle;
 
@@ -627,7 +700,7 @@ function renderPerformance() {
   ensureTodayPerformanceMarks();
   const todayConfig = chartConfigForRange('today');
   renderTally();
-  renderChart(miniChart, 220, 64, todayConfig.bins, false, [], todayConfig.hoverLabels);
+  renderChart(miniChart, 220, 64, todayConfig.bins, false, [], todayConfig.hoverDetails);
   renderModalChart();
   renderChartHistory();
   performanceDate.dateTime = todayKey();
@@ -646,9 +719,11 @@ function updateChartHover(svg, event) {
   const hoverGroup = svg.querySelector('.chart-hover');
   if (!hoverGroup) return;
 
-  const label = `${meta.hoverLabels[nearest.index] || nearest.index}: ${nearest.value} ${nearest.value === 1 ? 'tick' : 'ticks'}`;
+  const labelLines = meta.hoverDetails[nearest.index] || [
+    `${nearest.index} · ${formatTickCount(nearest.value)}`,
+  ];
   const labelY = Math.max(12, nearest.y - (meta.height > 100 ? 14 : 8));
-  const labelX = clamp(nearest.x, 34, meta.width - 34);
+  const labelX = clamp(nearest.x, 76, meta.width - 76);
 
   hoverGroup.classList.add('is-visible');
   hoverGroup.querySelector('.chart-hover-line').setAttribute('x1', nearest.x);
@@ -659,7 +734,15 @@ function updateChartHover(svg, event) {
   const labelNode = hoverGroup.querySelector('.chart-hover-label');
   labelNode.setAttribute('x', labelX);
   labelNode.setAttribute('y', labelY);
-  labelNode.textContent = label;
+  labelNode.textContent = '';
+  labelLines.forEach((line, index) => {
+    const tspan = makeSvgElement('tspan', {
+      x: labelX,
+      dy: index === 0 ? 0 : '1.25em',
+    });
+    tspan.textContent = line;
+    labelNode.appendChild(tspan);
+  });
 }
 
 function hideChartHover(svg) {
@@ -841,6 +924,73 @@ function toggleMetronome() {
 
   startMetronome();
 }
+
+function playButtonClickRebound(button) {
+  if (!button || button.disabled) return;
+
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const hoverScale = getComputedStyle(button).getPropertyValue('--button-hover-scale').trim() || '0.97';
+  const isFinePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+  const restScale = isFinePointer && button.matches(':hover') ? hoverScale : '1';
+
+  button.clickReboundAnimation?.cancel();
+  window.clearTimeout(button.clickReboundTimer);
+  window.clearTimeout(button.clickReboundResetTimer);
+
+  if (reduceMotion) {
+    button.style.transform = '';
+    button.style.transition = '';
+    return;
+  }
+
+  if (typeof button.animate !== 'function') {
+    button.style.transition = 'transform 90ms cubic-bezier(0.23, 1, 0.32, 1)';
+    button.style.transform = 'scale(1.018)';
+
+    button.clickReboundTimer = window.setTimeout(() => {
+      button.style.transition = 'transform 130ms cubic-bezier(0.23, 1, 0.32, 1)';
+      button.style.transform = `scale(${restScale})`;
+    }, 90);
+
+    button.clickReboundResetTimer = window.setTimeout(() => {
+      button.style.transition = '';
+      button.style.transform = '';
+    }, 240);
+
+    return;
+  }
+
+  button.clickReboundAnimation = button.animate(
+    [
+      { transform: `scale(${hoverScale})` },
+      { transform: 'scale(1.018)', offset: 0.52 },
+      { transform: `scale(${restScale})` },
+    ],
+    {
+      duration: 220,
+      easing: 'cubic-bezier(0.23, 1, 0.32, 1)',
+    },
+  );
+
+  button.clickReboundAnimation.addEventListener(
+    'finish',
+    () => {
+      button.style.transform = '';
+      button.clickReboundAnimation = null;
+    },
+    { once: true },
+  );
+}
+
+document.querySelectorAll('button').forEach((button) => {
+  button.addEventListener('pointerup', () => playButtonClickRebound(button));
+  button.addEventListener('mouseup', () => playButtonClickRebound(button));
+  button.addEventListener('touchend', () => playButtonClickRebound(button), { passive: true });
+  button.addEventListener('pointercancel', () => {
+    button.style.transition = '';
+    button.style.transform = '';
+  });
+});
 
 timerDisplay.addEventListener('focus', () => {
   stopTimer('Editing');

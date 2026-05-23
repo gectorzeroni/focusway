@@ -12,17 +12,17 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@500;600&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="./styles.css?v=chart-history" />
+    <link rel="stylesheet" href="./styles.css?v=tally-remove-slide" />
   </head>
   <body>
     <main class="app" aria-label="Timer and sound workspace">
       <section class="performance-bar" aria-label="Performance hours feature">
         <div class="performance-tally">
+          <button class="tally-remove" id="tally-remove" type="button" aria-label="Remove latest performance mark"></button>
           <button class="tally-button" id="tally-button" type="button" aria-label="Add performance mark">
             <span class="tally-empty" id="tally-empty">Click to add tick</span>
             <svg class="tally-board" id="tally-board" viewBox="0 0 360 64" preserveAspectRatio="xMinYMid meet" role="img" aria-label="Performance marks"></svg>
           </button>
-          <button class="tally-remove" id="tally-remove" type="button" aria-label="Remove latest performance mark"></button>
         </div>
 
         <time class="performance-date" id="performance-date"></time>
@@ -94,9 +94,9 @@
         </div>
 
         <div class="sound-panel is-selected" id="metronome-panel" role="tabpanel" aria-labelledby="metronome-tab">
+          <span class="bpm-label">BPM</span>
           <div class="bpm-wrap">
             <input id="bpm-input" class="bpm-input" type="number" min="20" max="240" value="120" aria-label="Beats per minute" />
-            <span>BPM</span>
           </div>
 
           <div class="tempo-control" aria-label="Adjust tempo">
@@ -167,6 +167,7 @@
             <button class="chart-range-button is-selected" type="button" role="tab" aria-selected="true" data-chart-range="today">Today</button>
             <button class="chart-range-button" type="button" role="tab" aria-selected="false" data-chart-range="previous">Previous day</button>
             <button class="chart-range-button" type="button" role="tab" aria-selected="false" data-chart-range="last5">Last 5 days</button>
+            <button class="chart-range-button" type="button" role="tab" aria-selected="false" data-chart-range="last30">Last 30 days</button>
           </div>
         </div>
         <svg class="large-chart" id="large-chart" viewBox="0 0 720 300" role="img" aria-label="Performance marks by hour"></svg>
@@ -177,6 +178,6 @@
       </div>
     </div>
 
-    <script src="./app.js?v=chart-history"></script>
+    <script src="./app.js?v=tally-remove-slide"></script>
   </body>
 </html>
