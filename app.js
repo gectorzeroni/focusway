@@ -19,7 +19,7 @@ const chartModal = document.querySelector('#chart-modal');
 const chartClose = document.querySelector('#chart-close');
 const chartSubtitle = document.querySelector('#chart-subtitle');
 const chartTotal = document.querySelector('#chart-total');
-const chartRangeButtons = [...document.querySelectorAll('[data-chart-range]')];
+const chartRangeSelect = document.querySelector('#chart-range-select');
 const largeChart = document.querySelector('#large-chart');
 const chartHistoryList = document.querySelector('#chart-history-list');
 
@@ -57,8 +57,11 @@ let currentSpotifyEmbedSrc = spotifyFrame.src;
 let performanceDays = readPerformanceDays();
 let performanceMarks = [];
 let chartRange = 'today';
+let chartCloseTimer = null;
 
 const spotifyTypes = new Set(['album', 'artist', 'episode', 'playlist', 'show', 'track']);
+const METRONOME_DOWNBEAT_VOLUME = 0.14;
+const METRONOME_BEAT_VOLUME = 0.095;
 
 function clamp(value, min, max) {
   return Math.min(Math.max(Number.isFinite(value) ? value : min, min), max);
@@ -547,12 +550,12 @@ function recentDayPerformance(totalDays) {
   });
 }
 
-function chartPoints(width, height, inset, bins) {
+function chartPoints(width, height, horizontalInset, verticalInset, bins) {
   const max = Math.max(1, ...bins);
   return bins.map((value, index) => {
     const denominator = Math.max(1, bins.length - 1);
-    const x = inset + (index / denominator) * (width - inset * 2);
-    const y = height - inset - (value / max) * (height - inset * 2);
+    const x = horizontalInset + (index / denominator) * (width - horizontalInset * 2);
+    const y = height - verticalInset - (value / max) * (height - verticalInset * 2);
     return { x, y, value, index };
   });
 }
@@ -560,33 +563,29 @@ function chartPoints(width, height, inset, bins) {
 function renderChart(svg, width, height, bins, showLabels = false, labels = [], hoverDetails = []) {
   clearSvg(svg);
 
-  const inset = showLabels ? 42 : 18;
-  const points = chartPoints(width, height, inset, bins);
+  const horizontalInset = showLabels ? 0 : 18;
+  const verticalInset = showLabels ? 42 : 18;
+  const points = chartPoints(width, height, horizontalInset, verticalInset, bins);
   const hasData = points.some((point) => point.value > 0);
   const path = points.map((point) => `${point.x.toFixed(1)},${point.y.toFixed(1)}`).join(' ');
   svg.classList.toggle('is-empty', !hasData);
 
   if (showLabels) {
     svg.append(
-      makeSvgElement('line', { class: 'chart-grid', x1: inset, y1: inset, x2: inset, y2: height - inset }),
-      makeSvgElement('line', { class: 'chart-axis', x1: inset, y1: height - inset, x2: width - inset, y2: height - inset }),
+      makeSvgElement('line', { class: 'chart-grid', x1: horizontalInset, y1: verticalInset, x2: horizontalInset, y2: height - verticalInset }),
+      makeSvgElement('line', { class: 'chart-axis', x1: horizontalInset, y1: height - verticalInset, x2: width - horizontalInset, y2: height - verticalInset }),
     );
   }
 
   svg.appendChild(makeSvgElement('polyline', { class: 'chart-line', points: path }));
-
-  points.forEach((point) => {
-    if (showLabels && point.value > 0) {
-      svg.appendChild(makeSvgElement('circle', { class: 'chart-dot', cx: point.x, cy: point.y, r: showLabels ? 5 : 4 }));
-    }
-  });
 
   if (showLabels) {
     labels.forEach(([index, label]) => {
       const point = points[index];
       if (!point) return;
 
-      const text = makeSvgElement('text', { class: 'chart-label', x: point.x, y: height - 12, 'text-anchor': 'middle' });
+      const textAnchor = index === 0 ? 'start' : index === points.length - 1 ? 'end' : 'middle';
+      const text = makeSvgElement('text', { class: 'chart-label', x: point.x, y: height - 12, 'text-anchor': textAnchor });
       text.textContent = label;
       svg.appendChild(text);
     });
@@ -594,12 +593,12 @@ function renderChart(svg, width, height, bins, showLabels = false, labels = [], 
 
   const hoverGroup = makeSvgElement('g', { class: 'chart-hover', 'aria-hidden': 'true' });
   hoverGroup.append(
-    makeSvgElement('line', { class: 'chart-hover-line', x1: inset, y1: inset, x2: inset, y2: height - inset }),
-    makeSvgElement('circle', { class: 'chart-hover-dot', cx: inset, cy: height - inset, r: showLabels ? 5 : 4 }),
-    makeSvgElement('text', { class: 'chart-hover-label', x: inset, y: inset - 10, 'text-anchor': 'middle' }),
+    makeSvgElement('line', { class: 'chart-hover-line', x1: horizontalInset, y1: verticalInset, x2: horizontalInset, y2: height - verticalInset }),
+    makeSvgElement('circle', { class: 'chart-hover-dot', cx: horizontalInset, cy: height - verticalInset, r: showLabels ? 5 : 4 }),
+    makeSvgElement('text', { class: 'chart-hover-label', x: horizontalInset, y: verticalInset - 10, 'text-anchor': 'middle' }),
   );
   svg.appendChild(hoverGroup);
-  svg.__chartMeta = { width, height, inset, points, hoverDetails };
+  svg.__chartMeta = { width, height, horizontalInset, verticalInset, points, hoverDetails };
 }
 
 function chartConfigForRange(range) {
@@ -661,12 +660,7 @@ function renderModalChart() {
   renderChart(largeChart, 720, 300, config.bins, true, config.labels, config.hoverDetails);
   chartTotal.textContent = config.total;
   chartSubtitle.textContent = config.subtitle;
-
-  chartRangeButtons.forEach((button) => {
-    const selected = button.dataset.chartRange === chartRange;
-    button.classList.toggle('is-selected', selected);
-    button.setAttribute('aria-selected', String(selected));
-  });
+  chartRangeSelect.value = chartRange;
 }
 
 function renderChartHistory() {
@@ -766,13 +760,22 @@ function removePerformanceMark() {
 }
 
 function openChartModal() {
+  window.clearTimeout(chartCloseTimer);
   renderModalChart();
   chartModal.hidden = false;
+  window.requestAnimationFrame(() => {
+    chartModal.classList.add('is-open');
+  });
   chartClose.focus();
 }
 
 function closeChartModal() {
-  chartModal.hidden = true;
+  if (chartModal.hidden) return;
+
+  chartModal.classList.remove('is-open');
+  chartCloseTimer = window.setTimeout(() => {
+    chartModal.hidden = true;
+  }, 240);
   miniChartButton.focus();
 }
 
@@ -888,7 +891,11 @@ function renderBeat(index) {
 
 function pulseMetronome() {
   renderBeat(currentBeat);
-  playTone(currentBeat === 0 ? 1080 : 760, 0.035, currentBeat === 0 ? 0.06 : 0.04);
+  playTone(
+    currentBeat === 0 ? 1080 : 760,
+    0.035,
+    currentBeat === 0 ? METRONOME_DOWNBEAT_VOLUME : METRONOME_BEAT_VOLUME,
+  );
   currentBeat = (currentBeat + 1) % beatNodes.length;
 }
 
@@ -1054,11 +1061,9 @@ chartModal.addEventListener('click', (event) => {
   }
 });
 
-chartRangeButtons.forEach((button) => {
-  button.addEventListener('click', () => {
-    chartRange = button.dataset.chartRange;
-    renderModalChart();
-  });
+chartRangeSelect.addEventListener('change', () => {
+  chartRange = chartRangeSelect.value;
+  renderModalChart();
 });
 
 [miniChart, largeChart].forEach((chart) => {
