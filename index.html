@@ -12,7 +12,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@500;600&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="./styles.css?v=tally-remove-slide" />
+    <link rel="stylesheet" href="./styles.css?v=chart-panel-updates" />
   </head>
   <body>
     <main class="app" aria-label="Timer and sound workspace">
@@ -163,12 +163,14 @@
 
         <div class="chart-summary">
           <strong id="chart-total">0</strong>
-          <div class="chart-range" role="tablist" aria-label="Performance range">
-            <button class="chart-range-button is-selected" type="button" role="tab" aria-selected="true" data-chart-range="today">Today</button>
-            <button class="chart-range-button" type="button" role="tab" aria-selected="false" data-chart-range="previous">Previous day</button>
-            <button class="chart-range-button" type="button" role="tab" aria-selected="false" data-chart-range="last5">Last 5 days</button>
-            <button class="chart-range-button" type="button" role="tab" aria-selected="false" data-chart-range="last30">Last 30 days</button>
-          </div>
+          <label class="chart-range" for="chart-range-select">
+            <select id="chart-range-select" aria-label="Performance range">
+              <option value="today">Today</option>
+              <option value="previous">Previous day</option>
+              <option value="last5">Last 5 days</option>
+              <option value="last30">Last 30 days</option>
+            </select>
+          </label>
         </div>
         <svg class="large-chart" id="large-chart" viewBox="0 0 720 300" role="img" aria-label="Performance marks by hour"></svg>
         <section class="chart-history" aria-labelledby="chart-history-title">
@@ -178,6 +180,6 @@
       </div>
     </div>
 
-    <script src="./app.js?v=tally-remove-slide"></script>
+    <script src="./app.js?v=chart-panel-updates"></script>
   </body>
 </html>
