@@ -15,6 +15,15 @@
   --ease-panel: cubic-bezier(0, 0, 0.1, 1);
 }
 
+@font-face {
+  font-family: "Google Sans Flex";
+  src: url("./Google%20Sans%20Flex/GoogleSansFlex-VariableFont_GRAD,ROND,opsz,slnt,wdth,wght.ttf") format("truetype");
+  font-display: swap;
+  font-style: oblique 0deg 10deg;
+  font-stretch: 25% 151%;
+  font-weight: 1 1000;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -146,7 +155,7 @@ button:active:not(:disabled) {
 
 .metronome-pane {
   grid-row: 2;
-  padding-top: 35px;
+  padding-top: 52px;
 }
 
 .timer-pane {
@@ -242,13 +251,16 @@ button:active:not(:disabled) {
 .bpm-input,
 .readout {
   color: var(--soft-ink);
-  font-weight: 500;
+  font-stretch: normal;
+  font-weight: 400;
   line-height: 1;
-  font-variant-numeric: tabular-nums;
+  font-kerning: normal;
+  font-variant-numeric: normal;
   letter-spacing: 0;
 }
 
 .bpm-input {
+  font-variation-settings: "wdth" 100, "opsz" 120;
   width: 3ch;
   border: 0;
   background: transparent;
@@ -287,7 +299,7 @@ button:active:not(:disabled) {
   display: block;
   width: 16px;
   height: 122px;
-  border-radius: 3px;
+  border-radius: 0;
   background: var(--quiet);
   transition-property: background-color, transform;
   transition-duration: 120ms;
@@ -489,6 +501,7 @@ button:active:not(:disabled) {
 
 .readout {
   max-width: 100%;
+  font-variation-settings: "wdth" 100, "opsz" 144;
   font-size: var(--timer-number-size);
   outline: 0;
   white-space: nowrap;
@@ -524,7 +537,7 @@ button:active:not(:disabled) {
   grid-template-rows: minmax(0, 1fr) 1px minmax(0, 1fr);
   min-width: 0;
   min-height: 0;
-  padding-top: 35px;
+  padding-top: 52px;
 }
 
 .history-panel {
@@ -626,8 +639,8 @@ button:active:not(:disabled) {
 
 .chart-hover-label {
   fill: var(--ink);
-  font-size: 0.8rem;
-  font-weight: 600;
+  font-size: 0.6rem;
+  font-weight: 400;
   paint-order: stroke;
   stroke: var(--paper);
   stroke-width: 5;
@@ -673,6 +686,23 @@ button:active:not(:disabled) {
   outline: 0;
 }
 
+.tally-title {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: none;
+  color: var(--ink);
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1;
+  pointer-events: none;
+  text-transform: uppercase;
+}
+
+.tally-button.has-marks .tally-title {
+  display: block;
+}
+
 .tally-empty {
   position: absolute;
   top: 0;
@@ -686,7 +716,9 @@ button:active:not(:disabled) {
   color: var(--green);
   font-family: "Google Sans Flex", "Google Sans", "Google Sans Text", "Product Sans", Arial, Helvetica, sans-serif;
   font-size: 38px;
+  font-stretch: normal;
   font-style: normal;
+  font-variation-settings: "wdth" 100, "GRAD" 0, "ROND" 0, "slnt" 0;
   font-weight: 900;
   line-height: 1;
   pointer-events: none;
@@ -705,6 +737,7 @@ button:active:not(:disabled) {
   width: min(34vw, 227px);
   max-width: 100%;
   height: auto;
+  transform: translateX(-40px);
 }
 
 .tally-empty-text {
@@ -748,7 +781,7 @@ button:active:not(:disabled) {
   width: 72px;
   height: 49px;
   border: 1px solid var(--ink);
-  border-radius: 9px;
+  border-radius: 0;
   background: #ffffff;
   color: var(--ink);
   cursor: pointer;
@@ -1098,7 +1131,8 @@ button:active:not(:disabled) {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: 1rem;
+  column-gap: 1rem;
+  row-gap: 0.25rem;
   min-height: 2rem;
   border-top: 1px solid rgba(0, 0, 0, 0.14);
   color: var(--ink);
@@ -1122,6 +1156,15 @@ button:active:not(:disabled) {
 .chart-history-row strong {
   font-weight: 500;
   font-variant-numeric: tabular-nums;
+}
+
+.chart-history-times {
+  grid-column: 1 / -1;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 0.875rem;
+  font-weight: 400;
+  line-height: 1.35;
 }
 
 @media (max-width: 980px) {
