@@ -376,8 +376,18 @@ function formatShortDate(date = new Date()) {
   });
 }
 
-function formatHourLabel(hour) {
-  return `${pad(hour)}:00`;
+function halfHourIndex(date) {
+  return date.getHours() * 2 + (date.getMinutes() >= 30 ? 1 : 0);
+}
+
+function formatHalfHourLabel(index) {
+  const hour = Math.floor(index / 2);
+  const minute = index % 2 === 0 ? '00' : '30';
+  return `${pad(hour)}:${minute}`;
+}
+
+function formatTickCount(count) {
+  return `${count} ${count === 1 ? 'tick' : 'ticks'}`;
 }
 
 function formatMarkTime(mark) {
@@ -387,11 +397,7 @@ function formatMarkTime(mark) {
   });
 }
 
-function formatTickCount(count) {
-  return `${count} ${count === 1 ? 'tick' : 'ticks'}`;
-}
-
-function formatMarkTimes(marks) {
+function formatHistoryTimes(marks) {
   if (!marks.length) return 'No ticks logged';
   return marks
     .slice()
@@ -568,11 +574,11 @@ function marksForDay(key) {
 }
 
 function hourlyPerformance(key = todayKey()) {
-  const bins = Array.from({ length: 24 }, () => 0);
+  const bins = Array.from({ length: 48 }, () => 0);
   marksForDay(key).forEach((mark) => {
     const date = new Date(mark);
     if (todayKey(date) === key) {
-      bins[date.getHours()] += 1;
+      bins[halfHourIndex(date)] += 1;
     }
   });
   return bins;
@@ -580,20 +586,19 @@ function hourlyPerformance(key = todayKey()) {
 
 function hourlyPerformanceDetails(key = todayKey()) {
   const bins = hourlyPerformance(key);
-  const marksByHour = Array.from({ length: 24 }, () => []);
+  const marksByHalfHour = Array.from({ length: 48 }, () => []);
 
   marksForDay(key).forEach((mark) => {
     const date = new Date(mark);
     if (todayKey(date) === key) {
-      marksByHour[date.getHours()].push(mark);
+      marksByHalfHour[halfHourIndex(date)].push(mark);
     }
   });
 
   return {
     bins,
-    hoverDetails: marksByHour.map((marks, hour) => [
-      `${formatHourLabel(hour)} · ${formatTickCount(marks.length)}`,
-      formatMarkTimes(marks),
+    hoverDetails: marksByHalfHour.map((marks, index) => [
+      `${formatHalfHourLabel(index)} · ${formatTickCount(marks.length)}`,
     ]),
   };
 }
@@ -673,7 +678,7 @@ function chartConfigForRange(range) {
     const details = hourlyPerformanceDetails(key);
     return {
       bins: details.bins,
-      labels: [[0, '00'], [6, '06'], [12, '12'], [18, '18'], [23, '23']],
+      labels: [[0, '00'], [12, '06'], [24, '12'], [36, '18'], [47, '23:30']],
       hoverDetails: details.hoverDetails,
       subtitle: `${formatPerformanceDate(date)} · previous day`,
       total: marksForDay(key).length,
@@ -687,7 +692,6 @@ function chartConfigForRange(range) {
       labels: days.map((day, index) => [index, day.label]),
       hoverDetails: days.map((day) => [
         `${day.label} · ${formatTickCount(day.value)}`,
-        formatMarkTimes(day.marks),
       ]),
       subtitle: 'Last 5 days',
       total: days.reduce((sum, day) => sum + day.value, 0),
@@ -703,7 +707,6 @@ function chartConfigForRange(range) {
         .filter((_, index) => index === 0 || index === 7 || index === 14 || index === 21 || index === 29),
       hoverDetails: days.map((day) => [
         `${day.label} · ${formatTickCount(day.value)}`,
-        formatMarkTimes(day.marks),
       ]),
       subtitle: 'Last 30 days',
       total: days.reduce((sum, day) => sum + day.value, 0),
@@ -713,7 +716,7 @@ function chartConfigForRange(range) {
   const details = hourlyPerformanceDetails(todayKey());
   return {
     bins: details.bins,
-    labels: [[0, '00'], [6, '06'], [12, '12'], [18, '18'], [23, '23']],
+    labels: [[0, '00'], [12, '06'], [24, '12'], [36, '18'], [47, '23:30']],
     hoverDetails: details.hoverDetails,
     subtitle: `${formatPerformanceDate()} · today`,
     total: marksForDay(todayKey()).length,
@@ -746,11 +749,16 @@ function renderChartHistory() {
       date.dateTime = key;
       date.textContent = formatPerformanceDate(dateFromKey(key));
 
-      const count = marksForDay(key).length;
+      const marks = marksForDay(key);
+      const count = marks.length;
       const total = document.createElement('strong');
-      total.textContent = `${count} ${count === 1 ? 'tick' : 'ticks'}`;
+      total.textContent = formatTickCount(count);
 
-      row.append(date, total);
+      const times = document.createElement('span');
+      times.className = 'chart-history-times';
+      times.textContent = formatHistoryTimes(marks);
+
+      row.append(date, total, times);
       chartHistoryList.appendChild(row);
     });
 }
@@ -783,7 +791,7 @@ function updateChartHover(svg, event) {
     `${nearest.index} · ${formatTickCount(nearest.value)}`,
   ];
   const labelY = Math.max(12, nearest.y - (meta.height > 100 ? 14 : 8));
-  const labelX = clamp(nearest.x, 76, meta.width - 76);
+  const labelX = clamp(nearest.x + 10, 10, meta.width - 76);
 
   hoverGroup.classList.add('is-visible');
   hoverGroup.querySelector('.chart-hover-line').setAttribute('x1', nearest.x);
@@ -794,6 +802,7 @@ function updateChartHover(svg, event) {
   const labelNode = hoverGroup.querySelector('.chart-hover-label');
   labelNode.setAttribute('x', labelX);
   labelNode.setAttribute('y', labelY);
+  labelNode.setAttribute('text-anchor', 'start');
   labelNode.textContent = '';
   labelLines.forEach((line, index) => {
     const tspan = makeSvgElement('tspan', {
