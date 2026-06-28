@@ -9,80 +9,16 @@
     <link rel="icon" type="image/png" sizes="16x16" href="./Favicon%20pack/favicon-16x16.png" />
     <link rel="apple-touch-icon" href="./Favicon%20pack/apple-touch-icon.png" />
     <link rel="manifest" href="./site.webmanifest" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@500;600&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="./styles.css?v=chart-panel-updates" />
+    <link rel="stylesheet" href="./styles.css?v=google-sans-flex-width" />
   </head>
   <body>
     <main class="app" aria-label="Timer and sound workspace">
-      <section class="performance-bar" aria-label="Performance hours feature">
-        <div class="performance-tally">
-          <button class="tally-remove" id="tally-remove" type="button" aria-label="Remove latest performance mark"></button>
-          <button class="tally-button" id="tally-button" type="button" aria-label="Add performance mark">
-            <span class="tally-empty" id="tally-empty">Click to add tick</span>
-            <svg class="tally-board" id="tally-board" viewBox="0 0 360 64" preserveAspectRatio="xMinYMid meet" role="img" aria-label="Performance marks"></svg>
-          </button>
-        </div>
-
+      <header class="top-bar">
+        <button class="login-button" id="login-button" type="button">Log in</button>
         <time class="performance-date" id="performance-date"></time>
+      </header>
 
-        <button class="mini-chart-button" id="mini-chart-button" type="button" aria-label="Open performance hours chart">
-          <svg class="mini-chart" id="mini-chart" viewBox="0 0 220 64" preserveAspectRatio="xMaxYMid meet" aria-hidden="true"></svg>
-        </button>
-      </section>
-
-      <section class="pane timer-pane" aria-labelledby="timer-title">
-        <svg class="timer-progress" aria-hidden="true">
-          <path class="timer-progress-track" />
-          <path class="timer-progress-line" />
-        </svg>
-
-        <header class="pane-header">
-          <h1 id="timer-title">Timer</h1>
-          <span class="status" id="timer-status">Ready</span>
-        </header>
-
-        <div
-          class="readout timer-editor"
-          id="timer-display"
-          role="textbox"
-          aria-label="Timer duration"
-          aria-live="polite"
-          aria-multiline="false"
-          contenteditable="true"
-          inputmode="numeric"
-          spellcheck="false"
-        >30:00</div>
-
-        <div class="preset-tabs" role="tablist" aria-label="Timer presets">
-          <button class="preset-tab" type="button" data-preset-minutes="5">5 min</button>
-          <button class="preset-tab" type="button" data-preset-minutes="10">10 min</button>
-          <button class="preset-tab" type="button" data-preset-minutes="30">30 min</button>
-        </div>
-
-        <div class="stepper" aria-label="Adjust timer minutes">
-          <button class="icon-button" id="timer-minus" type="button" aria-label="Subtract one minute">−</button>
-          <span>Minutes</span>
-          <button class="icon-button" id="timer-plus" type="button" aria-label="Add one minute">+</button>
-        </div>
-
-        <footer class="controls">
-          <button class="control play-toggle" id="timer-toggle" type="button" aria-label="Start timer" aria-pressed="false">
-            <span class="symbol" aria-hidden="true">
-              <span class="symbol-icon play-icon"></span>
-              <span class="symbol-icon pause-icon"></span>
-            </span>
-            <span class="control-label">Start</span>
-          </button>
-          <button class="control" id="timer-reset" type="button" aria-label="Reset timer">
-            <span class="symbol" aria-hidden="true">↻</span>
-            <span class="control-label">Reset</span>
-          </button>
-        </footer>
-      </section>
-
-      <section class="pane metronome-pane" aria-labelledby="sound-title">
+      <section class="pane metronome-pane left-panel" aria-labelledby="sound-title">
         <header class="pane-header">
           <h1 id="sound-title">Sound</h1>
           <span class="status" id="metro-status">Silent</span>
@@ -90,7 +26,7 @@
 
         <div class="mode-switch" role="tablist" aria-label="Sound source">
           <button class="mode-button is-selected" id="metronome-tab" type="button" role="tab" aria-selected="true" aria-controls="metronome-panel" data-sound-mode="metronome">Metronome</button>
-          <button class="mode-button" id="music-tab" type="button" role="tab" aria-selected="false" aria-controls="music-panel" data-sound-mode="music">Music</button>
+          <button class="mode-button" id="music-tab" type="button" role="tab" aria-selected="false" aria-controls="music-panel" data-sound-mode="music">Spotify</button>
         </div>
 
         <div class="sound-panel is-selected" id="metronome-panel" role="tabpanel" aria-labelledby="metronome-tab">
@@ -134,7 +70,7 @@
               title="Spotify player"
               src="https://open.spotify.com/embed/track/6rqhFgbbKwnb9MLmUQDhG6?utm_source=generator"
               width="100%"
-              height="352"
+              height="152"
               allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
               loading="lazy"
             ></iframe>
@@ -149,7 +85,103 @@
           </form>
         </div>
       </section>
+
+      <section class="pane timer-pane left-panel" aria-labelledby="timer-title">
+        <svg class="timer-progress" aria-hidden="true">
+          <path class="timer-progress-track" />
+          <path class="timer-progress-line" />
+        </svg>
+
+        <header class="pane-header">
+          <h1 id="timer-title">Timer</h1>
+          <span class="status" id="timer-status">Ready</span>
+        </header>
+
+        <div class="preset-tabs" role="tablist" aria-label="Timer presets">
+          <button class="preset-tab" type="button" data-preset-minutes="5">5 min</button>
+          <button class="preset-tab" type="button" data-preset-minutes="10">10 min</button>
+          <button class="preset-tab" type="button" data-preset-minutes="30">30 min</button>
+        </div>
+
+        <div class="timer-row">
+          <div
+            class="readout timer-editor"
+            id="timer-display"
+            role="textbox"
+            aria-label="Timer duration"
+            aria-live="polite"
+            aria-multiline="false"
+            contenteditable="true"
+            inputmode="numeric"
+            spellcheck="false"
+          >30:00</div>
+
+          <footer class="controls">
+            <button class="control play-toggle" id="timer-toggle" type="button" aria-label="Start timer" aria-pressed="false">
+              <span class="symbol" aria-hidden="true">
+                <span class="symbol-icon play-icon"></span>
+                <span class="symbol-icon pause-icon"></span>
+              </span>
+              <span class="control-label">Start</span>
+            </button>
+            <button class="control" id="timer-reset" type="button" aria-label="Reset timer">
+              <span class="symbol" aria-hidden="true">↻</span>
+              <span class="control-label">Reset</span>
+            </button>
+          </footer>
+        </div>
+
+        <div class="timer-linear-progress" aria-hidden="true">
+          <span></span>
+        </div>
+
+        <div class="stepper" aria-label="Adjust timer minutes">
+          <button class="icon-button" id="timer-minus" type="button" aria-label="Subtract one minute">−</button>
+          <span>Minutes</span>
+          <button class="icon-button" id="timer-plus" type="button" aria-label="Add one minute">+</button>
+        </div>
+      </section>
+
+      <section class="performance-bar" aria-label="Performance hours feature">
+        <div class="history-panel">
+          <span class="section-label">History</span>
+          <button class="mini-chart-button" id="mini-chart-button" type="button" aria-label="Open performance hours chart">
+            <strong class="history-total" id="history-total">0</strong>
+            <svg class="mini-chart" id="mini-chart" viewBox="0 0 220 64" preserveAspectRatio="none" aria-hidden="true"></svg>
+          </button>
+        </div>
+
+        <div class="history-rule"></div>
+
+        <div class="performance-tally">
+          <button class="tally-button" id="tally-button" type="button" aria-label="Add performance mark">
+            <span class="tally-empty" id="tally-empty">
+              <img class="tally-empty-hand" src="./Hand-illustration.svg" alt="" aria-hidden="true" />
+              <span class="tally-empty-text">Click to add a tick</span>
+            </span>
+            <svg class="tally-board" id="tally-board" viewBox="0 0 360 64" preserveAspectRatio="xMaxYMax meet" role="img" aria-label="Performance marks"></svg>
+          </button>
+          <button class="tally-remove" id="tally-remove" type="button" aria-label="Remove latest performance mark"></button>
+        </div>
+      </section>
     </main>
+
+    <div class="login-modal" id="login-modal" hidden>
+      <div class="login-dialog" role="dialog" aria-modal="true" aria-labelledby="login-title" aria-describedby="login-note">
+        <button class="login-close" id="login-close" type="button" aria-label="Close login"></button>
+        <form class="login-form" id="login-form">
+          <h2 id="login-title">Create local account</h2>
+          <label>
+            <span>Name</span>
+            <input id="login-name" type="text" maxlength="32" autocomplete="name" placeholder="Your name" required />
+          </label>
+          <p class="login-note" id="login-note">
+            Your name and focus history are stored only in this browser on this device. They will not sync across devices and can be removed if browser site data is cleared.
+          </p>
+          <button class="login-submit" type="submit">Create account</button>
+        </form>
+      </div>
+    </div>
 
     <div class="chart-modal" id="chart-modal" hidden>
       <div class="chart-dialog" role="dialog" aria-modal="true" aria-labelledby="chart-title">
@@ -180,6 +212,6 @@
       </div>
     </div>
 
-    <script src="./app.js?v=chart-panel-updates"></script>
+    <script src="./app.js?v=google-sans-flex-width"></script>
   </body>
 </html>

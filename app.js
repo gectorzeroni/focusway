@@ -13,6 +13,12 @@ const performanceDate = document.querySelector('#performance-date');
 const tallyButton = document.querySelector('#tally-button');
 const tallyRemove = document.querySelector('#tally-remove');
 const tallyBoard = document.querySelector('#tally-board');
+const loginButton = document.querySelector('#login-button');
+const loginModal = document.querySelector('#login-modal');
+const loginClose = document.querySelector('#login-close');
+const loginForm = document.querySelector('#login-form');
+const loginName = document.querySelector('#login-name');
+const historyTotal = document.querySelector('#history-total');
 const miniChartButton = document.querySelector('#mini-chart-button');
 const miniChart = document.querySelector('#mini-chart');
 const chartModal = document.querySelector('#chart-modal');
@@ -54,14 +60,26 @@ let metronomeStartedByTimer = false;
 let currentBeat = 0;
 let soundMode = 'metronome';
 let currentSpotifyEmbedSrc = spotifyFrame.src;
+const STORAGE_KEYS = {
+  performanceDays: 'focusway.performanceDays',
+  performanceMarks: 'focusway.performanceMarks',
+  localAccountName: 'focusway.localAccountName',
+  localProfiles: 'focusway.localProfiles',
+  activeProfile: 'focusway.activeProfileId',
+};
+
+migrateProfilePerformanceDays();
 let performanceDays = readPerformanceDays();
 let performanceMarks = [];
 let chartRange = 'today';
 let chartCloseTimer = null;
+let loginCloseTimer = null;
 
 const spotifyTypes = new Set(['album', 'artist', 'episode', 'playlist', 'show', 'track']);
 const METRONOME_DOWNBEAT_VOLUME = 0.14;
 const METRONOME_BEAT_VOLUME = 0.095;
+const CHART_PANEL_TRANSITION_MS = 320;
+const LOGIN_MODAL_TRANSITION_MS = 220;
 
 function clamp(value, min, max) {
   return Math.min(Math.max(Number.isFinite(value) ? value : min, min), max);
@@ -163,11 +181,11 @@ function updateTimerProgressPath() {
 function updateTimerProgress() {
   updateTimerProgressPath();
   const remainingProgress = timerDuration > 0 ? clamp(timerRemaining / timerDuration, 0, 1) : 0;
-  const hue = Math.round(130 * clamp((remainingProgress - 0.2) / 0.8, 0, 1));
   const visibleLength = timerProgressPathLength * remainingProgress;
   timerProgressLine.style.strokeDasharray = `${visibleLength} ${timerProgressPathLength}`;
   timerProgressLine.style.strokeDashoffset = 0;
-  timerPane.style.setProperty('--timer-color', `hsl(${hue} 81% 39%)`);
+  timerPane.style.setProperty('--timer-color', 'var(--green)');
+  timerPane.style.setProperty('--timer-progress-ratio', remainingProgress.toFixed(4));
 }
 
 function exitTimerEditMode() {
@@ -314,6 +332,16 @@ function storeValue(key, value) {
   }
 }
 
+function normalizeAccountName(name) {
+  return String(name || '').trim().replace(/\s+/g, ' ').slice(0, 32);
+}
+
+function updateLoginButton() {
+  const name = normalizeAccountName(readStoredValue(STORAGE_KEYS.localAccountName));
+  loginButton.textContent = name || 'Log in';
+  loginButton.setAttribute('aria-label', name ? `Local account: ${name}` : 'Log in');
+}
+
 function todayKey(date = new Date()) {
   return [
     date.getFullYear(),
@@ -401,14 +429,52 @@ function normalizePerformanceDays(value) {
   }, {});
 }
 
+function profilePerformanceDaysKey(profileId) {
+  return `focusway.profiles.${profileId}.performanceDays`;
+}
+
+function migrateProfilePerformanceDays() {
+  try {
+    if (window.localStorage.getItem(STORAGE_KEYS.performanceDays)) return;
+
+    const profileIds = [];
+    const activeProfileId = window.localStorage.getItem(STORAGE_KEYS.activeProfile);
+    if (activeProfileId) profileIds.push(activeProfileId);
+
+    const storedProfiles = JSON.parse(window.localStorage.getItem(STORAGE_KEYS.localProfiles) || '[]');
+    if (Array.isArray(storedProfiles)) {
+      storedProfiles.forEach((profile) => {
+        if (typeof profile?.id === 'string' && !profileIds.includes(profile.id)) {
+          profileIds.push(profile.id);
+        }
+      });
+    }
+
+    if (!profileIds.includes('default')) profileIds.push('default');
+
+    const storedProfileDays = profileIds
+      .map((profileId) => window.localStorage.getItem(profilePerformanceDaysKey(profileId)))
+      .find(Boolean);
+
+    if (storedProfileDays) {
+      window.localStorage.setItem(
+        STORAGE_KEYS.performanceDays,
+        JSON.stringify(normalizePerformanceDays(JSON.parse(storedProfileDays))),
+      );
+    }
+  } catch {
+    return null;
+  }
+}
+
 function readPerformanceDays() {
   try {
-    const storedDays = window.localStorage.getItem('focusway.performanceDays');
+    const storedDays = window.localStorage.getItem(STORAGE_KEYS.performanceDays);
     if (storedDays) {
       return normalizePerformanceDays(JSON.parse(storedDays));
     }
 
-    const storedMarks = JSON.parse(window.localStorage.getItem('focusway.performanceMarks') || '[]');
+    const storedMarks = JSON.parse(window.localStorage.getItem(STORAGE_KEYS.performanceMarks) || '[]');
     return normalizePerformanceDays(storedMarks);
   } catch {
     return {};
@@ -424,8 +490,8 @@ function ensureTodayPerformanceMarks() {
 
 function storePerformanceDays() {
   try {
-    window.localStorage.setItem('focusway.performanceDays', JSON.stringify(performanceDays));
-    window.localStorage.removeItem('focusway.performanceMarks');
+    window.localStorage.setItem(STORAGE_KEYS.performanceDays, JSON.stringify(performanceDays));
+    window.localStorage.removeItem(STORAGE_KEYS.performanceMarks);
   } catch {
     return null;
   }
@@ -476,7 +542,7 @@ function renderTally() {
     const x = startX + group * groupGap + offset * lineGap;
     contentRight = Math.max(contentRight, x + strokeInset);
     tallyBoard.appendChild(
-      makeSvgElement('line', { class: 'tally-mark', x1: x, y1: 16, x2: x, y2: 48 }),
+      makeSvgElement('line', { class: 'tally-mark', x1: x, y1: 0, x2: x, y2: 64 }),
     );
 
     if (offset === 2) {
@@ -495,7 +561,6 @@ function renderTally() {
   }
 
   tallyBoard.setAttribute('viewBox', `0 0 ${contentRight} 64`);
-  tallyBoard.style.width = `${(contentRight / 64) * 2.65}rem`;
 }
 
 function marksForDay(key) {
@@ -697,6 +762,7 @@ function renderPerformance() {
   renderChart(miniChart, 220, 64, todayConfig.bins, false, [], todayConfig.hoverDetails);
   renderModalChart();
   renderChartHistory();
+  historyTotal.textContent = todayConfig.total;
   performanceDate.dateTime = todayKey();
   performanceDate.textContent = formatPerformanceDate();
 }
@@ -759,6 +825,37 @@ function removePerformanceMark() {
   renderPerformance();
 }
 
+function openLoginModal() {
+  window.clearTimeout(loginCloseTimer);
+  const storedName = normalizeAccountName(readStoredValue(STORAGE_KEYS.localAccountName));
+  loginName.value = storedName;
+  loginModal.hidden = false;
+  window.requestAnimationFrame(() => {
+    loginModal.classList.add('is-open');
+  });
+  loginName.focus();
+  loginName.select();
+}
+
+function closeLoginModal() {
+  if (loginModal.hidden) return;
+
+  loginModal.classList.remove('is-open');
+  loginCloseTimer = window.setTimeout(() => {
+    loginModal.hidden = true;
+  }, LOGIN_MODAL_TRANSITION_MS);
+  loginButton.focus();
+}
+
+function createLocalAccount() {
+  const name = normalizeAccountName(loginName.value);
+  if (!name) return;
+
+  storeValue(STORAGE_KEYS.localAccountName, name);
+  updateLoginButton();
+  closeLoginModal();
+}
+
 function openChartModal() {
   window.clearTimeout(chartCloseTimer);
   renderModalChart();
@@ -775,7 +872,7 @@ function closeChartModal() {
   chartModal.classList.remove('is-open');
   chartCloseTimer = window.setTimeout(() => {
     chartModal.hidden = true;
-  }, 240);
+  }, CHART_PANEL_TRANSITION_MS);
   miniChartButton.focus();
 }
 
@@ -1053,6 +1150,17 @@ bpmPlus.addEventListener('click', () => setBpm(parseInt(bpmInput.value, 10) + 1)
 metroToggle.addEventListener('click', toggleMetronome);
 tallyButton.addEventListener('click', addPerformanceMark);
 tallyRemove.addEventListener('click', removePerformanceMark);
+loginButton.addEventListener('click', openLoginModal);
+loginClose.addEventListener('click', closeLoginModal);
+loginForm.addEventListener('submit', (event) => {
+  event.preventDefault();
+  createLocalAccount();
+});
+loginModal.addEventListener('click', (event) => {
+  if (event.target === loginModal) {
+    closeLoginModal();
+  }
+});
 miniChartButton.addEventListener('click', openChartModal);
 chartClose.addEventListener('click', closeChartModal);
 chartModal.addEventListener('click', (event) => {
@@ -1072,6 +1180,11 @@ chartRangeSelect.addEventListener('change', () => {
 });
 
 window.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && !loginModal.hidden) {
+    closeLoginModal();
+    return;
+  }
+
   if (event.key === 'Escape' && !chartModal.hidden) {
     closeChartModal();
   }
@@ -1094,6 +1207,7 @@ window.addEventListener('resize', () => {
 
 setTimerDuration(timerDuration);
 setBpm(120);
+updateLoginButton();
 
 const storedSpotify = readStoredValue('focusway.spotify');
 if (storedSpotify) {
