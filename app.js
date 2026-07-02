@@ -1,3 +1,21 @@
+import {
+  STORAGE_KEYS,
+  addDays,
+  dateFromKey,
+  formatHalfHourLabel,
+  formatHistoryTimes,
+  formatPerformanceDate,
+  formatShortDate,
+  formatTickCount,
+  halfHourIndex,
+  migrateProfilePerformanceDays,
+  readPerformanceDays,
+  readStoredValue,
+  storePerformanceDays as writePerformanceDays,
+  storeValue,
+  todayKey,
+} from './scripts/performance-store.js';
+
 const timerPane = document.querySelector('.timer-pane');
 const timerDisplay = document.querySelector('#timer-display');
 const timerStatus = document.querySelector('#timer-status');
@@ -60,13 +78,6 @@ let metronomeStartedByTimer = false;
 let currentBeat = 0;
 let soundMode = 'metronome';
 let currentSpotifyEmbedSrc = spotifyFrame.src;
-const STORAGE_KEYS = {
-  performanceDays: 'focusway.performanceDays',
-  performanceMarks: 'focusway.performanceMarks',
-  localAccountName: 'focusway.localAccountName',
-  localProfiles: 'focusway.localProfiles',
-  activeProfile: 'focusway.activeProfileId',
-};
 
 migrateProfilePerformanceDays();
 let performanceDays = readPerformanceDays();
@@ -316,22 +327,6 @@ function setBpm(value) {
   }
 }
 
-function readStoredValue(key) {
-  try {
-    return window.localStorage.getItem(key);
-  } catch {
-    return null;
-  }
-}
-
-function storeValue(key, value) {
-  try {
-    window.localStorage.setItem(key, value);
-  } catch {
-    return null;
-  }
-}
-
 function normalizeAccountName(name) {
   return String(name || '').trim().replace(/\s+/g, ' ').slice(0, 32);
 }
@@ -342,151 +337,6 @@ function updateLoginButton() {
   loginButton.setAttribute('aria-label', name ? `Local account: ${name}` : 'Log in');
 }
 
-function todayKey(date = new Date()) {
-  return [
-    date.getFullYear(),
-    pad(date.getMonth() + 1),
-    pad(date.getDate()),
-  ].join('-');
-}
-
-function dateFromKey(key) {
-  const [year, month, day] = key.split('-').map((part) => parseInt(part, 10));
-  return new Date(year, month - 1, day);
-}
-
-function addDays(date, amount) {
-  const nextDate = new Date(date);
-  nextDate.setDate(nextDate.getDate() + amount);
-  return nextDate;
-}
-
-function formatPerformanceDate(date = new Date()) {
-  return date.toLocaleDateString(undefined, {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
-}
-
-function formatShortDate(date = new Date()) {
-  return date.toLocaleDateString(undefined, {
-    month: 'short',
-    day: 'numeric',
-  });
-}
-
-function halfHourIndex(date) {
-  return date.getHours() * 2 + (date.getMinutes() >= 30 ? 1 : 0);
-}
-
-function formatHalfHourLabel(index) {
-  const hour = Math.floor(index / 2);
-  const minute = index % 2 === 0 ? '00' : '30';
-  return `${pad(hour)}:${minute}`;
-}
-
-function formatTickCount(count) {
-  return `${count} ${count === 1 ? 'tick' : 'ticks'}`;
-}
-
-function formatMarkTime(mark) {
-  return new Date(mark).toLocaleTimeString(undefined, {
-    hour: 'numeric',
-    minute: '2-digit',
-  });
-}
-
-function formatHistoryTimes(marks) {
-  if (!marks.length) return 'No ticks logged';
-  return marks
-    .slice()
-    .sort((a, b) => a - b)
-    .map(formatMarkTime)
-    .join(', ');
-}
-
-function normalizePerformanceDays(value) {
-  if (Array.isArray(value)) {
-    return value.reduce((days, mark) => {
-      if (!Number.isFinite(mark)) return days;
-
-      const key = todayKey(new Date(mark));
-      days[key] = days[key] || [];
-      days[key].push(mark);
-      return days;
-    }, {});
-  }
-
-  if (!value || typeof value !== 'object') return {};
-
-  return Object.entries(value).reduce((days, [key, marks]) => {
-    if (!Array.isArray(marks)) return days;
-
-    const validMarks = marks.filter((mark) => (
-      Number.isFinite(mark) && todayKey(new Date(mark)) === key
-    ));
-
-    if (validMarks.length) {
-      days[key] = validMarks;
-    }
-
-    return days;
-  }, {});
-}
-
-function profilePerformanceDaysKey(profileId) {
-  return `focusway.profiles.${profileId}.performanceDays`;
-}
-
-function migrateProfilePerformanceDays() {
-  try {
-    if (window.localStorage.getItem(STORAGE_KEYS.performanceDays)) return;
-
-    const profileIds = [];
-    const activeProfileId = window.localStorage.getItem(STORAGE_KEYS.activeProfile);
-    if (activeProfileId) profileIds.push(activeProfileId);
-
-    const storedProfiles = JSON.parse(window.localStorage.getItem(STORAGE_KEYS.localProfiles) || '[]');
-    if (Array.isArray(storedProfiles)) {
-      storedProfiles.forEach((profile) => {
-        if (typeof profile?.id === 'string' && !profileIds.includes(profile.id)) {
-          profileIds.push(profile.id);
-        }
-      });
-    }
-
-    if (!profileIds.includes('default')) profileIds.push('default');
-
-    const storedProfileDays = profileIds
-      .map((profileId) => window.localStorage.getItem(profilePerformanceDaysKey(profileId)))
-      .find(Boolean);
-
-    if (storedProfileDays) {
-      window.localStorage.setItem(
-        STORAGE_KEYS.performanceDays,
-        JSON.stringify(normalizePerformanceDays(JSON.parse(storedProfileDays))),
-      );
-    }
-  } catch {
-    return null;
-  }
-}
-
-function readPerformanceDays() {
-  try {
-    const storedDays = window.localStorage.getItem(STORAGE_KEYS.performanceDays);
-    if (storedDays) {
-      return normalizePerformanceDays(JSON.parse(storedDays));
-    }
-
-    const storedMarks = JSON.parse(window.localStorage.getItem(STORAGE_KEYS.performanceMarks) || '[]');
-    return normalizePerformanceDays(storedMarks);
-  } catch {
-    return {};
-  }
-}
-
 function ensureTodayPerformanceMarks() {
   const key = todayKey();
   performanceDays[key] = performanceDays[key] || [];
@@ -495,12 +345,7 @@ function ensureTodayPerformanceMarks() {
 }
 
 function storePerformanceDays() {
-  try {
-    window.localStorage.setItem(STORAGE_KEYS.performanceDays, JSON.stringify(performanceDays));
-    window.localStorage.removeItem(STORAGE_KEYS.performanceMarks);
-  } catch {
-    return null;
-  }
+  writePerformanceDays(performanceDays);
 }
 
 function clearSvg(svg) {
