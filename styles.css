@@ -8,11 +8,15 @@
   --rule: #000000;
   --green: #00d652;
   --timer-color: var(--green);
-  --timer-progress-ratio: 1;
-  --bpm-number-size: clamp(5rem, 11.5vw, 7.625rem);
+  --bpm-number-size: clamp(5.25rem, 12.075vw, 8.006rem);
   --timer-number-size: clamp(6rem, 15vw, 13.4375rem);
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
-  --ease-panel: cubic-bezier(0, 0, 0.1, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-panel: cubic-bezier(0.2, 0, 0, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  --focus-ring:
+    0 0 0 1px #ffffff,
+    0 0 0 3px rgba(0, 214, 82, 0.72);
 }
 
 @font-face {
@@ -44,6 +48,7 @@ body {
   font-weight: 500;
   letter-spacing: 0;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 button,
@@ -53,7 +58,6 @@ input {
 
 button {
   --button-scale: 1;
-  --button-hover-scale: 0.97;
   --button-motion-duration: 150ms;
   -webkit-tap-highlight-color: transparent;
   transform: scale(var(--button-scale));
@@ -65,13 +69,13 @@ button {
 
 @media (hover: hover) and (pointer: fine) {
   button:hover:not(:disabled) {
-    --button-scale: var(--button-hover-scale);
+    --button-scale: 1;
   }
 }
 
 button:active:not(:disabled) {
-  --button-scale: 0.97;
-  --button-motion-duration: 90ms;
+  --button-scale: 0.96;
+  --button-motion-duration: 100ms;
 }
 
 .app {
@@ -91,7 +95,7 @@ button:active:not(:disabled) {
   grid-column: 1 / -1;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   column-gap: 20px;
-  align-items: start;
+  align-items: center;
   border-bottom: 1px solid var(--rule);
   padding: 32px 0;
 }
@@ -102,7 +106,7 @@ button:active:not(:disabled) {
   gap: 4px;
   justify-self: start;
   min-width: 0;
-  min-height: 1rem;
+  min-height: 20px;
   border: 0;
   border-radius: 0;
   background: transparent;
@@ -127,6 +131,12 @@ button:active:not(:disabled) {
 .login-button:focus-visible {
   color: var(--green);
   outline: 0;
+}
+
+.login-button:focus-visible,
+.mini-chart-button:focus-visible,
+.tally-button:focus-visible {
+  box-shadow: var(--focus-ring);
 }
 
 .performance-date {
@@ -160,7 +170,10 @@ button:active:not(:disabled) {
 
 .timer-pane {
   grid-row: 3;
-  align-self: end;
+  align-self: stretch;
+  display: grid;
+  align-content: end;
+  grid-template-rows: auto auto auto;
 }
 
 .pane-header {
@@ -191,7 +204,7 @@ button:active:not(:disabled) {
 
 .mode-button,
 .preset-tab {
-  min-height: 21px;
+  min-height: 40px;
   border: 1px solid var(--ink);
   border-radius: 5px;
   background: #ffffff;
@@ -216,6 +229,18 @@ button:active:not(:disabled) {
   background: var(--ink);
   color: #ffffff;
   outline: 0;
+}
+
+.mode-button:focus-visible,
+.preset-tab:focus-visible,
+.control:focus-visible,
+.load-button:focus-visible,
+.login-submit:focus-visible,
+.login-close:focus-visible,
+.chart-close:focus-visible,
+.tally-remove:focus-visible,
+.chart-range select:focus-visible {
+  box-shadow: var(--focus-ring);
 }
 
 .sound-panel[hidden] {
@@ -301,9 +326,9 @@ button:active:not(:disabled) {
   height: 122px;
   border-radius: 0;
   background: var(--quiet);
-  transition-property: background-color, transform;
-  transition-duration: 120ms;
-  transition-timing-function: var(--ease-out);
+  transition-property: background-color;
+  transition-duration: 90ms;
+  transition-timing-function: ease;
 }
 
 .beat.active span {
@@ -376,8 +401,8 @@ button:active:not(:disabled) {
   height: 2.25rem;
   background: currentColor;
   transition-property: opacity, transform, filter;
-  transition-duration: 220ms;
-  transition-timing-function: var(--ease-out);
+  transition-duration: 200ms;
+  transition-timing-function: var(--ease-panel);
   mask-position: center;
   mask-repeat: no-repeat;
   mask-size: contain;
@@ -389,7 +414,7 @@ button:active:not(:disabled) {
 .play-icon {
   mask-image: url("./Play-icon.svg");
   -webkit-mask-image: url("./Play-icon.svg");
-  transform: translateX(0.05em) scale(1);
+  transform: translateX(calc(0.05em - 3px)) scale(1);
 }
 
 .pause-icon {
@@ -403,7 +428,7 @@ button:active:not(:disabled) {
 .play-toggle.is-active .play-icon {
   opacity: 0;
   filter: blur(4px);
-  transform: translateX(0.05em) scale(0.25);
+  transform: translateX(calc(0.05em - 3px)) scale(0.25);
 }
 
 .play-toggle.is-active .pause-icon {
@@ -451,7 +476,7 @@ button:active:not(:disabled) {
 
 .spotify-form input {
   width: 100%;
-  min-height: 34px;
+  min-height: 40px;
   border: 1px solid var(--ink);
   border-radius: 5px;
   background: transparent;
@@ -464,8 +489,13 @@ button:active:not(:disabled) {
   border-color: var(--green);
 }
 
+.spotify-form input:focus,
+.login-form input:focus {
+  box-shadow: var(--focus-ring);
+}
+
 .load-button {
-  min-height: 34px;
+  min-height: 40px;
   border: 1px solid var(--ink);
   border-radius: 5px;
   background: #ffffff;
@@ -521,10 +551,12 @@ button:active:not(:disabled) {
 
 .timer-linear-progress span {
   display: block;
-  width: calc(var(--timer-progress-ratio) * 100%);
+  width: 100%;
   height: 8px;
   background: var(--timer-color);
-  transition-property: width, background-color;
+  transform: scaleX(1);
+  transform-origin: left center;
+  transition-property: transform, background-color;
   transition-duration: 220ms;
   transition-timing-function: linear;
 }
@@ -775,18 +807,29 @@ button:active:not(:disabled) {
 
 .tally-remove {
   position: absolute;
-  top: 33px;
+  top: 30px;
   right: 0;
   z-index: 2;
   width: 72px;
-  height: 49px;
+  height: 72px;
   border: 1px solid var(--ink);
-  border-radius: 0;
+  border-radius: 9px;
   background: #ffffff;
   color: var(--ink);
   cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-4px);
+  transition-property: border-color, color, opacity, transform;
+  transition-duration: 160ms, 160ms, 160ms, 160ms;
+  transition-timing-function: var(--ease-out);
+}
+
+.performance-tally:hover .tally-remove:not(:disabled),
+.performance-tally:focus-within .tally-remove:not(:disabled) {
   opacity: 1;
   pointer-events: auto;
+  transform: translateY(0);
 }
 
 .tally-remove::before {
@@ -808,7 +851,9 @@ button:active:not(:disabled) {
 }
 
 .tally-remove:disabled {
-  display: none;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-4px);
 }
 
 .login-modal {
@@ -821,7 +866,7 @@ button:active:not(:disabled) {
   backdrop-filter: blur(14px);
   opacity: 0;
   padding: 1rem;
-  transition: opacity 220ms var(--ease-panel);
+  transition: opacity 200ms var(--ease-out);
 }
 
 .login-modal[hidden] {
@@ -843,7 +888,7 @@ button:active:not(:disabled) {
     0 24px 70px rgba(0, 0, 0, 0.14),
     0 1px 2px rgba(0, 0, 0, 0.08);
   transform: translateY(10px) scale(0.98);
-  transition: transform 220ms var(--ease-panel);
+  transition: transform 200ms var(--ease-out);
 }
 
 .login-modal.is-open .login-dialog {
@@ -981,7 +1026,7 @@ button:active:not(:disabled) {
   background: rgba(255, 255, 255, 0.78);
   backdrop-filter: blur(12px);
   opacity: 0;
-  transition: opacity 260ms var(--ease-panel);
+  transition: opacity 240ms var(--ease-out);
 }
 
 .chart-modal[hidden] {
@@ -1005,7 +1050,7 @@ button:active:not(:disabled) {
   box-shadow: -24px 0 70px rgba(0, 0, 0, 0.12);
   overflow: hidden;
   transform: translateX(100%);
-  transition: transform 320ms var(--ease-panel);
+  transition: transform 300ms var(--ease-drawer);
 }
 
 .chart-modal.is-open .chart-dialog {
@@ -1165,6 +1210,61 @@ button:active:not(:disabled) {
   font-size: 0.875rem;
   font-weight: 400;
   line-height: 1.35;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+  }
+
+  button,
+  .symbol-icon,
+  .timer-linear-progress span,
+  .tally-remove,
+  .login-modal,
+  .login-dialog,
+  .chart-modal,
+  .chart-dialog {
+    transition-duration: 1ms !important;
+  }
+
+  button,
+  button:active:not(:disabled),
+  .login-dialog,
+  .chart-dialog,
+  .tally-remove,
+  .tally-remove:disabled {
+    transform: none !important;
+  }
+
+  .timer-linear-progress span {
+    transition-property: background-color;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .login-modal,
+  .chart-modal {
+    background: rgba(255, 255, 255, 0.94);
+    backdrop-filter: none;
+  }
+}
+
+@media (prefers-contrast: more) {
+  :root {
+    --muted: rgba(0, 0, 0, 0.72);
+    --quiet: #d6d6d6;
+    --focus-ring:
+      0 0 0 1px #ffffff,
+      0 0 0 4px #000000;
+  }
+
+  .login-dialog,
+  .chart-dialog {
+    box-shadow: none;
+  }
 }
 
 @media (max-width: 980px) {
