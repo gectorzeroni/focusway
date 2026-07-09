@@ -27,6 +27,7 @@ const timerPlus = document.querySelector('#timer-plus');
 const timerProgress = document.querySelector('.timer-progress');
 const timerProgressTrack = document.querySelector('.timer-progress-track');
 const timerProgressLine = document.querySelector('.timer-progress-line');
+const timerLinearProgressBar = document.querySelector('.timer-linear-progress span');
 const performanceDate = document.querySelector('#performance-date');
 const tallyButton = document.querySelector('#tally-button');
 const tallyRemove = document.querySelector('#tally-remove');
@@ -89,8 +90,8 @@ let loginCloseTimer = null;
 const spotifyTypes = new Set(['album', 'artist', 'episode', 'playlist', 'show', 'track']);
 const METRONOME_DOWNBEAT_VOLUME = 0.14;
 const METRONOME_BEAT_VOLUME = 0.095;
-const CHART_PANEL_TRANSITION_MS = 320;
-const LOGIN_MODAL_TRANSITION_MS = 220;
+const CHART_PANEL_TRANSITION_MS = 300;
+const LOGIN_MODAL_TRANSITION_MS = 200;
 
 function clamp(value, min, max) {
   return Math.min(Math.max(Number.isFinite(value) ? value : min, min), max);
@@ -195,8 +196,7 @@ function updateTimerProgress() {
   const visibleLength = timerProgressPathLength * remainingProgress;
   timerProgressLine.style.strokeDasharray = `${visibleLength} ${timerProgressPathLength}`;
   timerProgressLine.style.strokeDashoffset = 0;
-  timerPane.style.setProperty('--timer-color', 'var(--green)');
-  timerPane.style.setProperty('--timer-progress-ratio', remainingProgress.toFixed(4));
+  timerLinearProgressBar.style.transform = `scaleX(${remainingProgress.toFixed(4)})`;
 }
 
 function exitTimerEditMode() {
@@ -509,7 +509,7 @@ function renderChart(svg, width, height, bins, showLabels = false, labels = [], 
   const hoverGroup = makeSvgElement('g', { class: 'chart-hover', 'aria-hidden': 'true' });
   hoverGroup.append(
     makeSvgElement('line', { class: 'chart-hover-line', x1: horizontalInset, y1: verticalInset, x2: horizontalInset, y2: height - verticalInset }),
-    makeSvgElement('circle', { class: 'chart-hover-dot', cx: horizontalInset, cy: height - verticalInset, r: showLabels ? 5 : 4 }),
+    makeSvgElement('ellipse', { class: 'chart-hover-dot', cx: horizontalInset, cy: height - verticalInset, rx: showLabels ? 5 : 4, ry: showLabels ? 5 : 4 }),
     makeSvgElement('text', { class: 'chart-hover-label', x: horizontalInset, y: verticalInset - 10, 'text-anchor': 'middle' }),
   );
   svg.appendChild(hoverGroup);
@@ -626,6 +626,11 @@ function updateChartHover(svg, event) {
 
   const rect = svg.getBoundingClientRect();
   const pointerX = ((event.clientX - rect.left) / rect.width) * meta.width;
+  const scaleX = rect.width / meta.width;
+  const scaleY = rect.height / meta.height;
+  const screenRadius = meta.height > 100 ? 5 : 4;
+  const dotRadiusX = scaleX > 0 ? screenRadius / scaleX : screenRadius;
+  const dotRadiusY = scaleY > 0 ? screenRadius / scaleY : screenRadius;
   const nearest = meta.points.reduce((closest, point) => (
     Math.abs(point.x - pointerX) < Math.abs(closest.x - pointerX) ? point : closest
   ), meta.points[0]);
@@ -641,8 +646,11 @@ function updateChartHover(svg, event) {
   hoverGroup.classList.add('is-visible');
   hoverGroup.querySelector('.chart-hover-line').setAttribute('x1', nearest.x);
   hoverGroup.querySelector('.chart-hover-line').setAttribute('x2', nearest.x);
-  hoverGroup.querySelector('.chart-hover-dot').setAttribute('cx', nearest.x);
-  hoverGroup.querySelector('.chart-hover-dot').setAttribute('cy', nearest.y);
+  const hoverDot = hoverGroup.querySelector('.chart-hover-dot');
+  hoverDot.setAttribute('cx', nearest.x);
+  hoverDot.setAttribute('cy', nearest.y);
+  hoverDot.setAttribute('rx', dotRadiusX);
+  hoverDot.setAttribute('ry', dotRadiusY);
 
   const labelNode = hoverGroup.querySelector('.chart-hover-label');
   labelNode.setAttribute('x', labelX);
@@ -882,73 +890,6 @@ function toggleMetronome() {
 
   startMetronome();
 }
-
-function playButtonClickRebound(button) {
-  if (!button || button.disabled) return;
-
-  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const hoverScale = getComputedStyle(button).getPropertyValue('--button-hover-scale').trim() || '0.97';
-  const isFinePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
-  const restScale = isFinePointer && button.matches(':hover') ? hoverScale : '1';
-
-  button.clickReboundAnimation?.cancel();
-  window.clearTimeout(button.clickReboundTimer);
-  window.clearTimeout(button.clickReboundResetTimer);
-
-  if (reduceMotion) {
-    button.style.transform = '';
-    button.style.transition = '';
-    return;
-  }
-
-  if (typeof button.animate !== 'function') {
-    button.style.transition = 'transform 90ms cubic-bezier(0.23, 1, 0.32, 1)';
-    button.style.transform = 'scale(1.018)';
-
-    button.clickReboundTimer = window.setTimeout(() => {
-      button.style.transition = 'transform 130ms cubic-bezier(0.23, 1, 0.32, 1)';
-      button.style.transform = `scale(${restScale})`;
-    }, 90);
-
-    button.clickReboundResetTimer = window.setTimeout(() => {
-      button.style.transition = '';
-      button.style.transform = '';
-    }, 240);
-
-    return;
-  }
-
-  button.clickReboundAnimation = button.animate(
-    [
-      { transform: `scale(${hoverScale})` },
-      { transform: 'scale(1.018)', offset: 0.52 },
-      { transform: `scale(${restScale})` },
-    ],
-    {
-      duration: 220,
-      easing: 'cubic-bezier(0.23, 1, 0.32, 1)',
-    },
-  );
-
-  button.clickReboundAnimation.addEventListener(
-    'finish',
-    () => {
-      button.style.transform = '';
-      button.clickReboundAnimation = null;
-    },
-    { once: true },
-  );
-}
-
-document.querySelectorAll('button').forEach((button) => {
-  button.addEventListener('pointerup', () => playButtonClickRebound(button));
-  button.addEventListener('mouseup', () => playButtonClickRebound(button));
-  button.addEventListener('touchend', () => playButtonClickRebound(button), { passive: true });
-  button.addEventListener('pointercancel', () => {
-    button.style.transition = '';
-    button.style.transform = '';
-  });
-});
 
 timerDisplay.addEventListener('focus', () => {
   stopTimer('Editing');
