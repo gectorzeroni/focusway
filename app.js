@@ -15,6 +15,7 @@ import {
   storeValue,
   todayKey,
 } from './scripts/performance-store.js';
+import { playSoundEffect } from './scripts/sound-effects.js';
 
 const timerPane = document.querySelector('.timer-pane');
 const timerDisplay = document.querySelector('#timer-display');
@@ -218,6 +219,7 @@ function commitTimerEdit() {
   const duration = parseTimerText(timerDisplay.textContent);
   if (duration === null || duration <= 0) {
     timerStatus.textContent = 'Invalid';
+    playSoundEffect('error');
     updateTimerDisplay();
     return false;
   }
@@ -280,7 +282,11 @@ function startTimer() {
     timerStatus.textContent = 'Running';
     timerPane.classList.add('is-running');
     setToggleState(timerToggle, true, 'Pause timer', 'Start timer');
-    if (soundMode === 'metronome' && !metroRunning) {
+    const metronomeWillStart = soundMode === 'metronome' && !metroRunning;
+    if (soundMode !== 'metronome') {
+      playSoundEffect('ready');
+    }
+    if (metronomeWillStart) {
       startMetronome();
       metronomeStartedByTimer = true;
     }
@@ -295,6 +301,7 @@ function toggleTimer() {
 
   if (timerInterval) {
     stopTimer('Paused');
+    playSoundEffect('droplet');
     return;
   }
 
@@ -676,6 +683,7 @@ function addPerformanceMark() {
   performanceMarks.push(Date.now());
   storePerformanceDays();
   renderPerformance();
+  playSoundEffect('press');
 }
 
 function removePerformanceMark() {
@@ -685,6 +693,7 @@ function removePerformanceMark() {
   performanceMarks.pop();
   storePerformanceDays();
   renderPerformance();
+  playSoundEffect('whisper');
 }
 
 function openLoginModal() {
@@ -697,9 +706,10 @@ function openLoginModal() {
   });
   loginName.focus();
   loginName.select();
+  playSoundEffect('bloom');
 }
 
-function closeLoginModal() {
+function closeLoginModal({ playDismissSound = true } = {}) {
   if (loginModal.hidden) return;
 
   loginModal.classList.remove('is-open');
@@ -707,6 +717,9 @@ function closeLoginModal() {
     loginModal.hidden = true;
   }, LOGIN_MODAL_TRANSITION_MS);
   loginButton.focus();
+  if (playDismissSound) {
+    playSoundEffect('droplet');
+  }
 }
 
 function createLocalAccount() {
@@ -715,7 +728,8 @@ function createLocalAccount() {
 
   storeValue(STORAGE_KEYS.localAccountName, name);
   updateLoginButton();
-  closeLoginModal();
+  closeLoginModal({ playDismissSound: false });
+  playSoundEffect('success');
 }
 
 function openChartModal() {
@@ -726,6 +740,7 @@ function openChartModal() {
     chartModal.classList.add('is-open');
   });
   chartClose.focus();
+  playSoundEffect('bloom');
 }
 
 function closeChartModal() {
@@ -736,6 +751,7 @@ function closeChartModal() {
     chartModal.hidden = true;
   }, CHART_PANEL_TRANSITION_MS);
   miniChartButton.focus();
+  playSoundEffect('droplet');
 }
 
 function parseSpotifyInput(value) {
@@ -776,6 +792,7 @@ function loadSpotify(value) {
   if (!parsed) {
     spotifyForm.classList.add('has-error');
     metroStatus.textContent = 'Invalid';
+    playSoundEffect('error');
     return;
   }
 
@@ -785,6 +802,7 @@ function loadSpotify(value) {
   spotifyInput.value = `https://open.spotify.com/${parsed.type}/${parsed.id}`;
   metroStatus.textContent = 'Music';
   storeValue('focusway.spotify', spotifyInput.value);
+  playSoundEffect('ready');
 }
 
 function stopSpotifyPlayback() {
@@ -793,7 +811,7 @@ function stopSpotifyPlayback() {
   }
 }
 
-function setSoundMode(mode) {
+function setSoundMode(mode, { playFeedback = true } = {}) {
   soundMode = mode === 'music' ? 'music' : 'metronome';
   const isMusic = soundMode === 'music';
 
@@ -816,6 +834,9 @@ function setSoundMode(mode) {
   }
 
   storeValue('focusway.soundMode', soundMode);
+  if (playFeedback) {
+    playSoundEffect('toggle');
+  }
 }
 
 function ensureAudioContext() {
@@ -923,6 +944,7 @@ presetButtons.forEach((button) => {
     timerDisplay.blur();
     stopTimer('Ready');
     setTimerDuration(Number(button.dataset.presetMinutes) * 60);
+    playSoundEffect('toggle');
   });
 });
 
@@ -934,6 +956,7 @@ timerReset.addEventListener('click', () => {
   timerRemaining = timerDuration;
   updateTimerDisplay();
   updateTimerProgress();
+  playSoundEffect('release');
 });
 timerMinus.addEventListener('click', () => nudgeTimerMinutes(-1));
 timerPlus.addEventListener('click', () => nudgeTimerMinutes(1));
@@ -967,6 +990,7 @@ chartModal.addEventListener('click', (event) => {
 chartRangeSelect.addEventListener('change', () => {
   chartRange = chartRangeSelect.value;
   renderModalChart();
+  playSoundEffect('page');
 });
 
 [miniChart, largeChart].forEach((chart) => {
@@ -1014,5 +1038,5 @@ if (storedSpotify) {
   }
 }
 
-setSoundMode(readStoredValue('focusway.soundMode') || 'metronome');
+setSoundMode(readStoredValue('focusway.soundMode') || 'metronome', { playFeedback: false });
 renderPerformance();
