@@ -1,6 +1,6 @@
 import {
   play as playCuelumeSound,
-} from '../node_modules/cuelume/dist/index.js';
+} from './vendor/cuelume/audio/engine.js';
 
 export function playSoundEffect(sound) {
   playCuelumeSound(sound);

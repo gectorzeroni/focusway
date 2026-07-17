@@ -9,6 +9,7 @@ Use sound as sparse, meaningful feedback for completed actions and state changes
 Implemented with `cuelume@0.1.2`:
 
 - `scripts/sound-effects.js` owns the Cuelume integration.
+- Cuelume's browser runtime and MIT license are vendored under `scripts/vendor/cuelume/` so static GitHub Pages deployments do not depend on `node_modules`.
 - Sound effects remain enabled without a user-facing on/off control.
 - P0 and P1 cues are wired to their successful or invalid state transitions.
 - Timer presets and reset use the planned P2 cues.
@@ -18,7 +19,7 @@ Implemented with `cuelume@0.1.2`:
 
 ## Integration prerequisite
 
-`cuelume` is ESM-only. The sound adapter imports its installed ESM output by relative path, which works with Focusway's current static development server. Any future deployment must run `npm install` and publish the dependency path, or bundle/vendor Cuelume as part of its build.
+`cuelume` is ESM-only. The sound adapter imports the vendored browser runtime by relative path, so both the local development server and static GitHub Pages deployment resolve the same committed files. The npm dependency remains pinned in `package-lock.json` as the source for future vendor updates.
 
 ## Recommended sound map
 
