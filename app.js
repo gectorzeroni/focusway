@@ -40,7 +40,7 @@ const loginForm = document.querySelector('#login-form');
 const loginName = document.querySelector('#login-name');
 const historyTotal = document.querySelector('#history-total');
 const miniChartButton = document.querySelector('#mini-chart-button');
-const miniChart = document.querySelector('#mini-chart');
+const hourGrid = document.querySelector('#hour-grid');
 const chartModal = document.querySelector('#chart-modal');
 const chartClose = document.querySelector('#chart-close');
 const chartSubtitle = document.querySelector('#chart-subtitle');
@@ -455,6 +455,44 @@ function hourlyPerformanceDetails(key = todayKey()) {
   };
 }
 
+function hourlyContributionBins(key = todayKey()) {
+  const bins = Array.from({ length: 24 }, () => 0);
+
+  marksForDay(key).forEach((mark) => {
+    const date = new Date(mark);
+    if (todayKey(date) === key) {
+      bins[date.getHours()] += 1;
+    }
+  });
+
+  return bins;
+}
+
+function contributionLevel(count) {
+  if (count === 0) return 0;
+  return count === 1 ? 1 : 2;
+}
+
+function formatHourRange(hour) {
+  return `${pad(hour)}:00–${pad(hour + 1)}:00`;
+}
+
+function renderHourlyContributionGrid(key = todayKey()) {
+  const bins = hourlyContributionBins(key);
+
+  bins.forEach((count, hour) => {
+    let cell = hourGrid.children[hour];
+    if (!cell) {
+      cell = document.createElement('span');
+      cell.className = 'hour-cell';
+      hourGrid.appendChild(cell);
+    }
+
+    cell.dataset.level = contributionLevel(count);
+    cell.title = `${formatHourRange(hour)} · ${formatTickCount(count)}`;
+  });
+}
+
 function recentDayKeys(totalDays) {
   const today = new Date();
   return Array.from({ length: totalDays }, (_, index) => addDays(today, index - totalDays + 1));
@@ -619,10 +657,14 @@ function renderPerformance() {
   ensureTodayPerformanceMarks();
   const todayConfig = chartConfigForRange('today');
   renderTally();
-  renderChart(miniChart, 220, 64, todayConfig.bins, false, [], todayConfig.hoverDetails);
+  renderHourlyContributionGrid();
   renderModalChart();
   renderChartHistory();
   historyTotal.textContent = todayConfig.total;
+  miniChartButton.setAttribute(
+    'aria-label',
+    `Open performance hours chart, ${formatTickCount(todayConfig.total)} today`,
+  );
   performanceDate.dateTime = todayKey();
   performanceDate.textContent = formatPerformanceDate();
 }
@@ -993,10 +1035,8 @@ chartRangeSelect.addEventListener('change', () => {
   playSoundEffect('page');
 });
 
-[miniChart, largeChart].forEach((chart) => {
-  chart.addEventListener('mousemove', (event) => updateChartHover(chart, event));
-  chart.addEventListener('mouseleave', () => hideChartHover(chart));
-});
+largeChart.addEventListener('mousemove', (event) => updateChartHover(largeChart, event));
+largeChart.addEventListener('mouseleave', () => hideChartHover(largeChart));
 
 window.addEventListener('keydown', (event) => {
   if (event.key === 'Escape' && !loginModal.hidden) {
