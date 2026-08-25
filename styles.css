@@ -619,12 +619,34 @@ button:active:not(:disabled) {
   font-variant-numeric: tabular-nums;
 }
 
-.mini-chart {
+.hour-grid {
   align-self: end;
-  display: block;
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: clamp(5px, 0.72vw, 8px);
   width: 100%;
-  height: 184px;
-  overflow: visible;
+  padding-bottom: 2px;
+}
+
+.hour-cell {
+  display: block;
+  justify-self: center;
+  width: 80%;
+  aspect-ratio: 1;
+  border-radius: 0;
+  background: var(--quiet);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.025);
+  transition-property: background-color;
+  transition-duration: 160ms;
+  transition-timing-function: var(--ease-out);
+}
+
+.hour-cell[data-level="1"] {
+  background: rgba(0, 214, 82, 0.42);
+}
+
+.hour-cell[data-level="2"] {
+  background: var(--green);
 }
 
 .chart-axis,
@@ -643,7 +665,6 @@ button:active:not(:disabled) {
   vector-effect: non-scaling-stroke;
 }
 
-.mini-chart.is-empty .chart-line,
 .large-chart.is-empty .chart-line {
   stroke: var(--quiet);
 }
@@ -1302,8 +1323,8 @@ button:active:not(:disabled) {
     grid-template-rows: auto minmax(0, 1fr);
   }
 
-  .mini-chart {
-    height: 150px;
+  .hour-grid {
+    gap: clamp(5px, 1.25vw, 8px);
   }
 
   #metronome-panel {
