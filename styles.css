@@ -625,7 +625,7 @@ button:active:not(:disabled) {
   grid-template-columns: repeat(12, minmax(0, 1fr));
   gap: clamp(5px, 0.72vw, 8px);
   width: 100%;
-  padding-bottom: 2px;
+  padding-bottom: 30px;
 }
 
 .hour-cell {
