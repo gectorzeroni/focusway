@@ -15,7 +15,7 @@
     <main class="app" aria-label="Timer and sound workspace">
       <header class="top-bar">
         <button class="login-button" id="login-button" type="button">Log in</button>
-        <time class="performance-date" id="performance-date"></time>
+        <div class="top-bar-right"><time class="performance-date" id="performance-date"></time><button id="achievements-button" class="achievements-button" type="button" aria-haspopup="dialog" aria-controls="achievements-dialog">Achievements<span class="achievement-dot" aria-hidden="true"></span></button></div>
       </header>
 
       <section class="pane metronome-pane left-panel" aria-labelledby="sound-title">
@@ -212,6 +212,17 @@
         </section>
       </div>
     </div>
+
+    <dialog id="achievements-dialog" class="achievements-dialog" aria-labelledby="achievements-title">
+      <header class="achievements-header"><div><h2 id="achievements-title">Achievements</h2><p id="achievements-count"></p></div><button id="achievements-close" class="achievement-close" aria-label="Close achievements" type="button"><svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" /></svg></button></header>
+      <ul id="achievements-list" class="achievements-list"></ul>
+    </dialog>
+    <dialog id="achievement-unlock" class="achievement-unlock" aria-labelledby="unlock-title" aria-describedby="unlock-pun unlock-description">
+      <span class="unlock-eyebrow">Achievement unlocked</span>
+      <span id="unlock-icon" class="achievement-icon" aria-hidden="true"></span>
+      <h2 id="unlock-title"></h2><p id="unlock-pun"></p><p id="unlock-description"></p>
+      <button id="unlock-ok" type="button" autofocus>OK</button>
+    </dialog>
 
     <script type="module" src="./app.js?v=hourly-contribution-grid-compact"></script>
   </body>

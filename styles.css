@@ -1405,3 +1405,35 @@ button:active:not(:disabled) {
     justify-content: flex-start;
   }
 }
+
+.top-bar-right { grid-column: 2; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.achievements-button { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 4px; border: 0; background: transparent; cursor: pointer; text-transform: uppercase; font-size: .875rem; color: var(--ink); }
+.achievement-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); visibility: hidden; }
+.has-unread .achievement-dot { visibility: visible; }
+.achievements-button:hover { color: var(--green); }
+.achievements-dialog, .achievement-unlock { color: var(--ink); background: var(--paper); border: 0; padding: 28px; width: min(540px, calc(100vw - 32px)); max-height: calc(100dvh - 48px); overflow-y: auto; border-radius: 20px; box-shadow: 0 8px 32px #0002, 0 1px 4px #0001; }
+.achievements-dialog::backdrop, .achievement-unlock::backdrop { background: #0005; }
+.achievements-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
+.achievements-header h2, .achievement-unlock h2 { font-size: 26px; margin: 0; font-weight: 600; text-wrap: balance; }
+.achievements-header p { color: var(--muted); font-size: 14px; margin: 8px 0 0; }
+.achievement-close { display: grid; place-items: center; flex-shrink: 0; padding: 0; line-height: 1; width: 40px; height: 40px; background: #f4f4f4; border: 0; border-radius: 50%; font-size: 26px; cursor: pointer; }
+.achievements-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 12px; }
+.achievement-card { display: flex; gap: 16px; padding: 16px; border-radius: 12px; background: #f6f6f6; }
+.achievement-icon { flex: 0 0 44px; width: 44px; height: 44px; display: grid; place-items: center; background: #e6e6e6; border-radius: 12px; font-size: 26px; }
+.is-earned .achievement-icon, .achievement-unlock .achievement-icon { background: var(--green); }
+.achievement-card h3 { font-size: 16px; margin: 0 0 6px; font-weight: 600; }
+.achievement-card p { margin: 0 0 8px; font-size: 14px; }
+.achievement-card small { display: block; color: var(--muted); line-height: 1.45; font-size: 12px; }
+.achievement-card div > span { display: block; margin-top: 10px; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+.is-earned div > span { color: #00782e; }
+.achievement-unlock { text-align: center; width: min(420px, calc(100vw - 32px)); padding: 36px; }
+.unlock-eyebrow { display: block; text-transform: uppercase; font-size: 11px; letter-spacing: .12em; color: var(--muted); }
+.achievement-unlock .achievement-icon { margin: 24px auto; width: 64px; height: 64px; font-size: 36px; border-radius: 18px; }
+#unlock-pun { font-size: 17px; line-height: 1.4; }
+#unlock-description { color: var(--muted); font-size: 14px; line-height: 1.5; }
+#unlock-ok { width: 100%; min-height: 44px; margin-top: 16px; border: 0; border-radius: 8px; background: var(--ink); color: white; cursor: pointer; }
+.achievements-button:focus-visible, .achievement-close:focus-visible, #unlock-ok:focus-visible { outline: 2px solid #008b36; outline-offset: 4px; }
+@media (max-width: 640px) { .top-bar-right { flex-wrap: wrap; justify-content: flex-end; gap: 8px; } .top-bar-right .performance-date { font-size: 12px; } .achievements-button { font-size: 12px; } .achievements-dialog { padding: 20px; } }
+@media (prefers-reduced-motion: no-preference) { .achievements-dialog[open], .achievement-unlock[open] { animation: achievement-enter 180ms var(--ease-panel); } @keyframes achievement-enter { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } } }
+
+.achievement-close svg { display: block; width: 16px; height: 16px; }

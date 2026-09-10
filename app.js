@@ -1,3 +1,4 @@
+import { createAchievements } from './scripts/achievements.js';
 import {
   STORAGE_KEYS,
   addDays,
@@ -722,10 +723,12 @@ function hideChartHover(svg) {
 
 function addPerformanceMark() {
   ensureTodayPerformanceMarks();
+  achievements.refresh();
   performanceMarks.push(Date.now());
   storePerformanceDays();
   renderPerformance();
   playSoundEffect('press');
+  achievements.refresh();
 }
 
 function removePerformanceMark() {
@@ -1080,3 +1083,5 @@ if (storedSpotify) {
 
 setSoundMode(readStoredValue('focusway.soundMode') || 'metronome', { playFeedback: false });
 renderPerformance();
+
+const achievements = createAchievements(() => performanceDays);
