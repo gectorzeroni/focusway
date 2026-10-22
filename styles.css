@@ -7,6 +7,7 @@
   --quiet: #e6e6e6;
   --rule: #000000;
   --green: #00d652;
+  --break: #3974d8;
   --timer-color: var(--green);
   --bpm-number-size: clamp(5.25rem, 12.075vw, 8.006rem);
   --timer-number-size: clamp(6rem, 15vw, 13.4375rem);
@@ -665,9 +666,11 @@ button:active:not(:disabled) {
   vector-effect: non-scaling-stroke;
 }
 
-.large-chart.is-empty .chart-line {
-  stroke: var(--quiet);
-}
+.chart-line-break { stroke: var(--break); stroke-dasharray: 6 4; }
+.chart-types { display: flex; gap: 8px; margin-bottom: 12px; }
+.chart-total-detail { display: block; color: var(--muted); font-size: 14px; margin-top: 8px; }
+.chart-types .tally-type:disabled { cursor: default; }
+.chart-hover-dot.chart-dot-break { fill: var(--break); }
 
 .chart-hover {
   opacity: 0;
@@ -718,6 +721,39 @@ button:active:not(:disabled) {
   min-height: 0;
   overflow: hidden;
   padding-top: 30px;
+  grid-template-rows: auto minmax(160px, 1fr);
+  gap: 18px;
+}
+
+.tally-types { display: flex; gap: 8px; padding-right: 80px; }
+.tally-type {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 40px; padding: 8px 12px; border: 0; border-radius: 6px;
+  background: transparent; color: var(--muted); font: inherit; font-size: 14px;
+  cursor: pointer; transition: background-color 160ms, transform 160ms;
+}
+.tally-type[aria-pressed="true"] { background: #f0f0f0; color: var(--ink); }
+.tally-type:hover { background: #f6f6f6; }
+.tally-type:active { transform: scale(0.96); }
+.tally-type:focus-visible, .tally-button:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
+.work-symbol { color: var(--green); font-size: 22px; font-weight: 700; }
+.break-symbol { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; width: 20px; height: 24px; }
+.break-symbol::before, .break-symbol::after { content: ''; width: 3px; height: 8px; background: var(--break); }
+.tally-type span:last-child { font-variant-numeric: tabular-nums; }
+.tally-button.is-break .tally-empty { color: var(--break); }
+.tally-button.is-break .tally-empty-hand { visibility: hidden; }
+.tally-break { stroke: var(--break); stroke-width: 12; stroke-linecap: square; vector-effect: non-scaling-stroke; fill: none; }
+.tally-mark, .tally-cross { color: var(--green); }
+.chart-history-breaks { display: block; color: var(--break); margin-top: 4px; }
+.hour-cell { position: relative; }
+.hour-cell[data-break-level="1"]::after,
+.hour-cell[data-break-level="2"]::after {
+  content: ''; position: absolute; right: 0; bottom: 0;
+  width: 47%; height: 47%; background: var(--break);
+}
+.hour-cell[data-break-level="2"]::before {
+  content: ''; position: absolute; right: 47%; bottom: 47%;
+  width: 21%; height: 21%; background: var(--break);
 }
 
 .tally-button {

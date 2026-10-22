@@ -93,3 +93,18 @@ test('formats half-hour indexes consistently', () => {
   assert.equal(halfHourIndex(new Date(2026, 6, 1, 23, 45)), 47);
   assert.equal(formatHalfHourLabel(47), '23:30');
 });
+
+test('saves and reloads breaks separately without changing work or legacy ticks', () => {
+  const mark = new Date(2026, 4, 4, 12, 30).getTime();
+  const storage = memoryStorage({
+    [STORAGE_KEYS.performanceMarks]: JSON.stringify([mark]),
+  });
+  assert.deepEqual(readPerformanceDays(storage, STORAGE_KEYS.breakDays), {});
+  const breaks = { '2026-05-04': [mark + 60000] };
+  assert.equal(storePerformanceDays(breaks, storage, STORAGE_KEYS.breakDays), true);
+  assert.deepEqual(readPerformanceDays(storage, STORAGE_KEYS.breakDays), breaks);
+  assert.deepEqual(readPerformanceDays(storage), { '2026-05-04': [mark] });
+  assert.ok(storage.getItem(STORAGE_KEYS.performanceMarks));
+  storePerformanceDays({ '2026-05-04': [mark] }, storage);
+  assert.deepEqual(readPerformanceDays(storage, STORAGE_KEYS.breakDays), breaks);
+});
