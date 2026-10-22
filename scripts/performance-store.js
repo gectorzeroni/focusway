@@ -1,5 +1,6 @@
 export const STORAGE_KEYS = {
   performanceDays: 'focusway.performanceDays',
+  breakDays: 'focusway.breakDays',
   performanceMarks: 'focusway.performanceMarks',
   localAccountName: 'focusway.localAccountName',
   localProfiles: 'focusway.localProfiles',
@@ -163,28 +164,29 @@ export function migrateProfilePerformanceDays(storage = defaultStorage()) {
   }
 }
 
-export function readPerformanceDays(storage = defaultStorage()) {
+export function readPerformanceDays(storage = defaultStorage(), key = STORAGE_KEYS.performanceDays) {
   try {
     if (!storage) return {};
 
-    const storedDays = storage.getItem(STORAGE_KEYS.performanceDays);
+    const storedDays = storage.getItem(key);
     if (storedDays) {
       return normalizePerformanceDays(JSON.parse(storedDays));
     }
 
-    const storedMarks = JSON.parse(storage.getItem(STORAGE_KEYS.performanceMarks) || '[]');
+    const storedMarks = key === STORAGE_KEYS.performanceDays
+      ? JSON.parse(storage.getItem(STORAGE_KEYS.performanceMarks) || '[]') : [];
     return normalizePerformanceDays(storedMarks);
   } catch {
     return {};
   }
 }
 
-export function storePerformanceDays(performanceDays, storage = defaultStorage()) {
+export function storePerformanceDays(performanceDays, storage = defaultStorage(), key = STORAGE_KEYS.performanceDays) {
   try {
     if (!storage) return false;
 
-    storage.setItem(STORAGE_KEYS.performanceDays, JSON.stringify(performanceDays));
-    storage.removeItem(STORAGE_KEYS.performanceMarks);
+    storage.setItem(key, JSON.stringify(performanceDays));
+    if (key === STORAGE_KEYS.performanceDays) storage.removeItem(STORAGE_KEYS.performanceMarks);
     return true;
   } catch {
     return false;

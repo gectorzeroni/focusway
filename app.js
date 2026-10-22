@@ -34,6 +34,8 @@ const performanceDate = document.querySelector('#performance-date');
 const tallyButton = document.querySelector('#tally-button');
 const tallyRemove = document.querySelector('#tally-remove');
 const tallyBoard = document.querySelector('#tally-board');
+const tallyTypes = [...document.querySelectorAll('[data-mark-type]')];
+let selectedMarkType = 'work';
 const loginButton = document.querySelector('#login-button');
 const loginModal = document.querySelector('#login-modal');
 const loginClose = document.querySelector('#login-close');
@@ -46,6 +48,8 @@ const chartModal = document.querySelector('#chart-modal');
 const chartClose = document.querySelector('#chart-close');
 const chartSubtitle = document.querySelector('#chart-subtitle');
 const chartTotal = document.querySelector('#chart-total');
+const chartFilters = [...document.querySelectorAll('[data-chart-type]')];
+const visibleChartTypes = new Set(['work', 'break']);
 const chartRangeSelect = document.querySelector('#chart-range-select');
 const largeChart = document.querySelector('#large-chart');
 const chartHistoryList = document.querySelector('#chart-history-list');
@@ -84,6 +88,7 @@ let currentSpotifyEmbedSrc = spotifyFrame.src;
 
 migrateProfilePerformanceDays();
 let performanceDays = readPerformanceDays();
+const breakDays = readPerformanceDays(undefined, STORAGE_KEYS.breakDays);
 let performanceMarks = [];
 let chartRange = 'today';
 let chartCloseTimer = null;
@@ -354,6 +359,14 @@ function ensureTodayPerformanceMarks() {
 
 function storePerformanceDays() {
   writePerformanceDays(performanceDays);
+  writePerformanceDays(breakDays, undefined, STORAGE_KEYS.breakDays);
+}
+
+function entriesForDay(key) {
+  return [
+    ...(performanceDays[key] || []).map((time) => ({ time, type: 'work' })),
+    ...(breakDays[key] || []).map((time) => ({ time, type: 'break' })),
+  ].sort((a, b) => a.time - b.time);
 }
 
 function clearSvg(svg) {
@@ -374,8 +387,18 @@ function renderTally() {
   ensureTodayPerformanceMarks();
   clearSvg(tallyBoard);
 
-  const count = performanceMarks.length;
-  tallyButton.setAttribute('aria-label', `Add performance mark, ${count} today`);
+  const entries = entriesForDay(todayKey());
+  const count = entries.length;
+  const breakCount = (breakDays[todayKey()] || []).length;
+  const summary = `${performanceMarks.length} work ticks and ${breakCount} ${breakCount === 1 ? 'break' : 'breaks'} today`;
+  document.querySelector('#work-count').textContent = performanceMarks.length;
+  document.querySelector('#break-count').textContent = breakCount;
+  tallyButton.setAttribute('aria-label', `Add ${selectedMarkType === 'work' ? 'work tick' : 'break line'}, ${summary}`);
+  tallyBoard.setAttribute('aria-label', summary);
+  tallyButton.classList.toggle('is-break', selectedMarkType === 'break');
+  tallyButton.querySelector('.tally-title').textContent = `Click to add ${selectedMarkType}`;
+  tallyButton.querySelector('.tally-empty-text').innerHTML = `Click to<br />add ${selectedMarkType}`;
+  tallyTypes.forEach((button) => button.setAttribute('aria-pressed', String(button.dataset.markType === selectedMarkType)));
   tallyButton.classList.toggle('has-marks', count > 0);
   tallyRemove.disabled = count === 0;
 
@@ -389,7 +412,7 @@ function renderTally() {
 
   const groupGap = 80;
   const lineGap = 18;
-  const startX = 8;
+  const startX = 12;
   const strokeInset = 2.5;
   const shownCount = Math.min(count, 12);
   const hiddenCount = count - shownCount;
@@ -400,11 +423,13 @@ function renderTally() {
     const offset = index % 3;
     const x = startX + group * groupGap + offset * lineGap;
     contentRight = Math.max(contentRight, x + strokeInset);
-    tallyBoard.appendChild(
-      makeSvgElement('line', { class: 'tally-mark', x1: x, y1: 0, x2: x, y2: 64 }),
-    );
+    const isBreak = entries[index].type === 'break';
+    tallyBoard.appendChild(isBreak
+      ? makeSvgElement('path', { class: 'tally-break', d: `M ${x} 0 V 25 M ${x} 39 V 64` })
+      : makeSvgElement('line', { class: 'tally-mark', x1: x, y1: 0, x2: x, y2: 64 }));
+    if (isBreak) contentRight = Math.max(contentRight, x + 10);
 
-    if (offset === 2) {
+    if (offset === 2 && entries.slice(index - 2, index + 1).every((entry) => entry.type === 'work')) {
       contentRight = Math.max(contentRight, x + 6 + strokeInset);
       tallyBoard.appendChild(
         makeSvgElement('line', { class: 'tally-cross', x1: x - lineGap * 2 - 6, y1: 32, x2: x + 6, y2: 32 }),
@@ -426,9 +451,9 @@ function marksForDay(key) {
   return performanceDays[key] || [];
 }
 
-function hourlyPerformance(key = todayKey()) {
+function hourlyPerformance(key = todayKey(), days = performanceDays) {
   const bins = Array.from({ length: 48 }, () => 0);
-  marksForDay(key).forEach((mark) => {
+  (days[key] || []).forEach((mark) => {
     const date = new Date(mark);
     if (todayKey(date) === key) {
       bins[halfHourIndex(date)] += 1;
@@ -437,11 +462,11 @@ function hourlyPerformance(key = todayKey()) {
   return bins;
 }
 
-function hourlyPerformanceDetails(key = todayKey()) {
-  const bins = hourlyPerformance(key);
+function hourlyPerformanceDetails(key = todayKey(), days = performanceDays, type = 'work') {
+  const bins = hourlyPerformance(key, days);
   const marksByHalfHour = Array.from({ length: 48 }, () => []);
 
-  marksForDay(key).forEach((mark) => {
+  (days[key] || []).forEach((mark) => {
     const date = new Date(mark);
     if (todayKey(date) === key) {
       marksByHalfHour[halfHourIndex(date)].push(mark);
@@ -451,7 +476,7 @@ function hourlyPerformanceDetails(key = todayKey()) {
   return {
     bins,
     hoverDetails: marksByHalfHour.map((marks, index) => [
-      `${formatHalfHourLabel(index)} · ${formatTickCount(marks.length)}`,
+      `${formatHalfHourLabel(index)} · ${marks.length} ${type === 'work' ? 'work ticks' : 'breaks'}`,
     ]),
   };
 }
@@ -490,7 +515,9 @@ function renderHourlyContributionGrid(key = todayKey()) {
     }
 
     cell.dataset.level = contributionLevel(count);
-    cell.title = `${formatHourRange(hour)} · ${formatTickCount(count)}`;
+    const breaks = (breakDays[key] || []).filter((mark) => new Date(mark).getHours() === hour).length;
+    cell.dataset.breakLevel = contributionLevel(breaks);
+    cell.title = `${formatHourRange(hour)} · ${formatTickCount(count)} worked · ${breaks} breaks`;
   });
 }
 
@@ -499,10 +526,10 @@ function recentDayKeys(totalDays) {
   return Array.from({ length: totalDays }, (_, index) => addDays(today, index - totalDays + 1));
 }
 
-function recentDayPerformance(totalDays) {
+function recentDayPerformance(totalDays, days = performanceDays) {
   return recentDayKeys(totalDays).map((date) => {
     const key = todayKey(date);
-    const marks = marksForDay(key).slice().sort((a, b) => a - b);
+    const marks = (days[key] || []).slice().sort((a, b) => a - b);
     return {
       label: formatShortDate(date),
       value: marks.length,
@@ -511,8 +538,7 @@ function recentDayPerformance(totalDays) {
   });
 }
 
-function chartPoints(width, height, horizontalInset, verticalInset, bins) {
-  const max = Math.max(1, ...bins);
+function chartPoints(width, height, horizontalInset, verticalInset, bins, max = Math.max(1, ...bins)) {
   return bins.map((value, index) => {
     const denominator = Math.max(1, bins.length - 1);
     const x = horizontalInset + (index / denominator) * (width - horizontalInset * 2);
@@ -521,14 +547,15 @@ function chartPoints(width, height, horizontalInset, verticalInset, bins) {
   });
 }
 
-function renderChart(svg, width, height, bins, showLabels = false, labels = [], hoverDetails = []) {
+function renderChart(svg, width, height, series, showLabels = false, labels = [], hoverDetails = []) {
   clearSvg(svg);
 
   const horizontalInset = showLabels ? 0 : 18;
   const verticalInset = showLabels ? 42 : 18;
-  const points = chartPoints(width, height, horizontalInset, verticalInset, bins);
-  const hasData = points.some((point) => point.value > 0);
-  const path = points.map((point) => `${point.x.toFixed(1)},${point.y.toFixed(1)}`).join(' ');
+  const max = Math.max(1, ...series.flatMap((item) => item.bins));
+  const plotted = series.map((item) => ({ ...item, points: chartPoints(width, height, horizontalInset, verticalInset, item.bins, max) }));
+  const points = plotted[0].points;
+  const hasData = plotted.some((item) => item.bins.some((value) => value > 0));
   svg.classList.toggle('is-empty', !hasData);
 
   if (showLabels) {
@@ -538,7 +565,10 @@ function renderChart(svg, width, height, bins, showLabels = false, labels = [], 
     );
   }
 
-  svg.appendChild(makeSvgElement('polyline', { class: 'chart-line', points: path }));
+  plotted.forEach((item) => {
+    const path = item.points.map((point) => `${point.x.toFixed(1)},${point.y.toFixed(1)}`).join(' ');
+    svg.appendChild(makeSvgElement('polyline', { class: `chart-line chart-line-${item.type}`, points: path }));
+  });
 
   if (showLabels) {
     labels.forEach(([index, label]) => {
@@ -555,34 +585,34 @@ function renderChart(svg, width, height, bins, showLabels = false, labels = [], 
   const hoverGroup = makeSvgElement('g', { class: 'chart-hover', 'aria-hidden': 'true' });
   hoverGroup.append(
     makeSvgElement('line', { class: 'chart-hover-line', x1: horizontalInset, y1: verticalInset, x2: horizontalInset, y2: height - verticalInset }),
-    makeSvgElement('ellipse', { class: 'chart-hover-dot', cx: horizontalInset, cy: height - verticalInset, rx: showLabels ? 5 : 4, ry: showLabels ? 5 : 4 }),
     makeSvgElement('text', { class: 'chart-hover-label', x: horizontalInset, y: verticalInset - 10, 'text-anchor': 'middle' }),
   );
+  plotted.forEach((item) => hoverGroup.appendChild(makeSvgElement('ellipse', { class: `chart-hover-dot chart-dot-${item.type}`, 'data-series': item.type, rx: 5, ry: 5 })));
   svg.appendChild(hoverGroup);
-  svg.__chartMeta = { width, height, horizontalInset, verticalInset, points, hoverDetails };
+  svg.__chartMeta = { width, height, horizontalInset, verticalInset, points, hoverDetails, plotted };
 }
 
-function chartConfigForRange(range) {
+function chartConfigForRange(range, sourceDays = performanceDays, type = 'work') {
   if (range === 'previous') {
     const date = addDays(new Date(), -1);
     const key = todayKey(date);
-    const details = hourlyPerformanceDetails(key);
+    const details = hourlyPerformanceDetails(key, sourceDays, type);
     return {
       bins: details.bins,
       labels: [[0, '00'], [12, '06'], [24, '12'], [36, '18'], [47, '23:30']],
       hoverDetails: details.hoverDetails,
       subtitle: `${formatPerformanceDate(date)} · previous day`,
-      total: marksForDay(key).length,
+      total: (sourceDays[key] || []).length,
     };
   }
 
   if (range === 'last5') {
-    const days = recentDayPerformance(5);
+    const days = recentDayPerformance(5, sourceDays);
     return {
       bins: days.map((day) => day.value),
       labels: days.map((day, index) => [index, day.label]),
       hoverDetails: days.map((day) => [
-        `${day.label} · ${formatTickCount(day.value)}`,
+        `${day.label} · ${day.value} ${type === 'work' ? 'work ticks' : 'breaks'}`,
       ]),
       subtitle: 'Last 5 days',
       total: days.reduce((sum, day) => sum + day.value, 0),
@@ -590,35 +620,46 @@ function chartConfigForRange(range) {
   }
 
   if (range === 'last30') {
-    const days = recentDayPerformance(30);
+    const days = recentDayPerformance(30, sourceDays);
     return {
       bins: days.map((day) => day.value),
       labels: days
         .map((day, index) => [index, day.label])
         .filter((_, index) => index === 0 || index === 7 || index === 14 || index === 21 || index === 29),
       hoverDetails: days.map((day) => [
-        `${day.label} · ${formatTickCount(day.value)}`,
+        `${day.label} · ${day.value} ${type === 'work' ? 'work ticks' : 'breaks'}`,
       ]),
       subtitle: 'Last 30 days',
       total: days.reduce((sum, day) => sum + day.value, 0),
     };
   }
 
-  const details = hourlyPerformanceDetails(todayKey());
+  const details = hourlyPerformanceDetails(todayKey(), sourceDays, type);
   return {
     bins: details.bins,
     labels: [[0, '00'], [12, '06'], [24, '12'], [36, '18'], [47, '23:30']],
     hoverDetails: details.hoverDetails,
     subtitle: `${formatPerformanceDate()} · today`,
-    total: marksForDay(todayKey()).length,
+    total: (sourceDays[todayKey()] || []).length,
   };
 }
 
 function renderModalChart() {
-  const config = chartConfigForRange(chartRange);
-  renderChart(largeChart, 720, 300, config.bins, true, config.labels, config.hoverDetails);
-  chartTotal.textContent = config.total;
-  chartSubtitle.textContent = config.subtitle;
+  const work = { ...chartConfigForRange(chartRange), type: 'work' };
+  const rest = { ...chartConfigForRange(chartRange, breakDays, 'break'), type: 'break' };
+  const series = [work, rest].filter((item) => visibleChartTypes.has(item.type));
+  const hoverDetails = work.bins.map((_, index) => series.map((item) => item.hoverDetails[index][0]));
+  renderChart(largeChart, 720, 300, series, true, work.labels, hoverDetails);
+  chartTotal.textContent = series.reduce((sum, item) => sum + item.total, 0);
+  chartTotal.setAttribute('aria-label', series.map((item) => `${item.total} ${item.type === 'work' ? 'work ticks' : 'breaks'}`).join(', '));
+  document.querySelector('#chart-total-detail').textContent = series.map((item) => `${item.total} ${item.type === 'work' ? 'work ticks' : 'breaks'}`).join(' · ');
+  largeChart.setAttribute('aria-label', `${series.map((item) => item.type === 'work' ? 'Work ticks' : 'Breaks').join(' and ')} by ${chartRange === 'today' || chartRange === 'previous' ? 'half hour' : 'day'}`);
+  chartFilters.forEach((button) => {
+    const active = visibleChartTypes.has(button.dataset.chartType);
+    button.setAttribute('aria-pressed', String(active));
+    button.disabled = active && visibleChartTypes.size === 1;
+  });
+  chartSubtitle.textContent = work.subtitle;
   chartRangeSelect.value = chartRange;
 }
 
@@ -627,7 +668,7 @@ function renderChartHistory() {
     chartHistoryList.removeChild(chartHistoryList.firstChild);
   }
 
-  const keys = new Set(Object.keys(performanceDays));
+  const keys = new Set([...Object.keys(performanceDays), ...Object.keys(breakDays)]);
   keys.add(todayKey());
 
   [...keys]
@@ -643,11 +684,18 @@ function renderChartHistory() {
       const marks = marksForDay(key);
       const count = marks.length;
       const total = document.createElement('strong');
-      total.textContent = formatTickCount(count);
+      const breaks = breakDays[key] || [];
+      total.textContent = `${formatTickCount(count)} worked · ${breaks.length} ${breaks.length === 1 ? 'break' : 'breaks'}`;
 
       const times = document.createElement('span');
       times.className = 'chart-history-times';
-      times.textContent = formatHistoryTimes(marks);
+      times.textContent = marks.length ? `Work: ${formatHistoryTimes(marks)}` : 'No work logged';
+      if (breaks.length) {
+        const breakTimes = document.createElement('span');
+        breakTimes.className = 'chart-history-breaks';
+        breakTimes.textContent = `Break: ${formatHistoryTimes(breaks)}`;
+        times.appendChild(breakTimes);
+      }
 
       row.append(date, total, times);
       chartHistoryList.appendChild(row);
@@ -696,11 +744,14 @@ function updateChartHover(svg, event) {
   hoverGroup.classList.add('is-visible');
   hoverGroup.querySelector('.chart-hover-line').setAttribute('x1', nearest.x);
   hoverGroup.querySelector('.chart-hover-line').setAttribute('x2', nearest.x);
-  const hoverDot = hoverGroup.querySelector('.chart-hover-dot');
-  hoverDot.setAttribute('cx', nearest.x);
-  hoverDot.setAttribute('cy', nearest.y);
-  hoverDot.setAttribute('rx', dotRadiusX);
-  hoverDot.setAttribute('ry', dotRadiusY);
+  meta.plotted.forEach((item) => {
+    const point = item.points[nearest.index];
+    const dot = hoverGroup.querySelector(`[data-series="${item.type}"]`);
+    dot.setAttribute('cx', point.x);
+    dot.setAttribute('cy', point.y);
+    dot.setAttribute('rx', dotRadiusX);
+    dot.setAttribute('ry', dotRadiusY);
+  });
 
   const labelNode = hoverGroup.querySelector('.chart-hover-label');
   labelNode.setAttribute('x', labelX);
@@ -724,7 +775,13 @@ function hideChartHover(svg) {
 function addPerformanceMark() {
   ensureTodayPerformanceMarks();
   achievements.refresh();
-  performanceMarks.push(Date.now());
+  if (selectedMarkType === 'break') {
+    const key = todayKey();
+    breakDays[key] = breakDays[key] || [];
+    breakDays[key].push(Date.now());
+  } else {
+    performanceMarks.push(Date.now());
+  }
   storePerformanceDays();
   renderPerformance();
   playSoundEffect('press');
@@ -733,9 +790,10 @@ function addPerformanceMark() {
 
 function removePerformanceMark() {
   ensureTodayPerformanceMarks();
-  if (!performanceMarks.length) return;
-
-  performanceMarks.pop();
+  const latest = entriesForDay(todayKey()).at(-1);
+  if (!latest) return;
+  if (latest.type === 'break') breakDays[todayKey()].pop();
+  else performanceMarks.pop();
   storePerformanceDays();
   renderPerformance();
   playSoundEffect('whisper');
@@ -1012,6 +1070,10 @@ bpmMinus.addEventListener('click', () => setBpm(parseInt(bpmInput.value, 10) - 1
 bpmPlus.addEventListener('click', () => setBpm(parseInt(bpmInput.value, 10) + 1));
 metroToggle.addEventListener('click', toggleMetronome);
 tallyButton.addEventListener('click', addPerformanceMark);
+tallyTypes.forEach((button) => button.addEventListener('click', () => {
+  selectedMarkType = button.dataset.markType;
+  renderTally();
+}));
 tallyRemove.addEventListener('click', removePerformanceMark);
 loginButton.addEventListener('click', openLoginModal);
 loginClose.addEventListener('click', closeLoginModal);
@@ -1031,6 +1093,15 @@ chartModal.addEventListener('click', (event) => {
     closeChartModal();
   }
 });
+
+chartFilters.forEach((button) => button.addEventListener('click', () => {
+  const type = button.dataset.chartType;
+  if (visibleChartTypes.has(type)) {
+    if (visibleChartTypes.size === 1) return;
+    visibleChartTypes.delete(type);
+  } else visibleChartTypes.add(type);
+  renderModalChart();
+}));
 
 chartRangeSelect.addEventListener('change', () => {
   chartRange = chartRangeSelect.value;
