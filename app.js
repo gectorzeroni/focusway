@@ -5,6 +5,7 @@ import {
   dateFromKey,
   formatHalfHourLabel,
   formatHistoryTimes,
+  formatMarkTime,
   formatPerformanceDate,
   formatShortDate,
   formatTickCount,
@@ -42,6 +43,10 @@ const loginName = document.querySelector('#login-name');
 const historyTotal = document.querySelector('#history-total');
 const miniChartButton = document.querySelector('#mini-chart-button');
 const hourGrid = document.querySelector('#hour-grid');
+const activityPopover = document.querySelector('#activity-popover');
+let inspectedActivityCell = null;
+let activityPopoverCloseTimer = null;
+let activityPopoverAnimation = null;
 const chartModal = document.querySelector('#chart-modal');
 const chartClose = document.querySelector('#chart-close');
 const chartSubtitle = document.querySelector('#chart-subtitle');
@@ -452,16 +457,110 @@ function renderHourlyContributionGrid(key = todayKey()) {
   bins.forEach((count, hour) => {
     let cell = hourGrid.children[hour];
     if (!cell) {
-      cell = document.createElement('span');
+      cell = document.createElement('button');
+      cell.type = 'button';
       cell.className = 'hour-cell';
+      const ring = document.createElement('span');
+      ring.className = 'hour-cell-ring';
+      ring.setAttribute('aria-hidden', 'true');
+      const surface = document.createElement('span');
+      surface.className = 'hour-cell-surface';
+      surface.setAttribute('aria-hidden', 'true');
+      cell.append(ring, surface);
       hourGrid.appendChild(cell);
     }
 
     cell.dataset.level = contributionLevel(count);
+    cell.dataset.hour = hour;
+    cell.dataset.day = key;
     const breaks = (breakDays[key] || []).filter((mark) => new Date(mark).getHours() === hour).length;
     cell.dataset.breakLevel = contributionLevel(breaks);
-    cell.title = `${formatHourRange(hour)} · ${formatTickCount(count)} worked · ${breaks} breaks`;
+    cell.setAttribute('aria-label', `${formatHourRange(hour)} · ${formatTickCount(count)} worked · ${breaks} ${breaks === 1 ? 'rest entry' : 'rest entries'}. Open history`);
   });
+  if (inspectedActivityCell) showActivityPopover(inspectedActivityCell);
+}
+
+function hideActivityPopover() {
+  window.clearTimeout(activityPopoverCloseTimer);
+  activityPopoverAnimation?.cancel();
+  activityPopoverAnimation = null;
+  inspectedActivityCell?.classList.remove('is-inspected');
+  inspectedActivityCell?.removeAttribute('aria-describedby');
+  inspectedActivityCell = null;
+  activityPopover.hidden = true;
+}
+
+function scheduleActivityPopoverClose() {
+  window.clearTimeout(activityPopoverCloseTimer);
+  activityPopoverCloseTimer = window.setTimeout(hideActivityPopover, 120);
+}
+
+function showActivityPopover(cell) {
+  window.clearTimeout(activityPopoverCloseTimer);
+  const entering = inspectedActivityCell !== cell || activityPopover.hidden;
+  if (inspectedActivityCell !== cell) hideActivityPopover();
+  inspectedActivityCell = cell;
+  const hour = Number(cell.dataset.hour);
+  const entries = entriesForDay(cell.dataset.day).filter((entry) => new Date(entry.time).getHours() === hour);
+  const workCount = entries.filter((entry) => entry.type === 'work').length;
+  const restCount = entries.length - workCount;
+  const date = document.createElement('span');
+  date.className = 'activity-popover-date';
+  date.textContent = formatPerformanceDate(dateFromKey(cell.dataset.day));
+  const heading = document.createElement('strong');
+  heading.className = 'activity-popover-hour';
+  heading.textContent = formatHourRange(hour);
+  const total = document.createElement('span');
+  total.className = 'activity-popover-total';
+  total.textContent = `${entries.length} ${entries.length === 1 ? 'entry' : 'entries'}`;
+  const counts = document.createElement('div');
+  counts.className = 'activity-popover-counts';
+  [['work', 'Work', workCount], ['break', 'Rest', restCount]].forEach(([type, label, count]) => {
+    const item = document.createElement('span');
+    item.className = `activity-popover-count activity-entry-${type}`;
+    item.textContent = `${label} ${count}`;
+    counts.appendChild(item);
+  });
+  const list = document.createElement('ul');
+  list.className = 'activity-popover-entries';
+  entries.forEach((entry) => {
+    const row = document.createElement('li');
+    const label = document.createElement('span');
+    label.className = `activity-entry-label activity-entry-${entry.type}`;
+    label.textContent = entry.type === 'work' ? 'Work' : 'Rest';
+    const time = document.createElement('time');
+    time.dateTime = new Date(entry.time).toISOString();
+    time.textContent = formatMarkTime(entry.time);
+    row.append(label, time);
+    list.appendChild(row);
+  });
+  activityPopover.replaceChildren(date, heading, total, counts);
+  if (entries.length) activityPopover.appendChild(list);
+  else {
+    const empty = document.createElement('p');
+    empty.className = 'activity-popover-empty';
+    empty.textContent = 'No entries logged in this hour.';
+    activityPopover.appendChild(empty);
+  }
+  cell.classList.add('is-inspected');
+  cell.setAttribute('aria-describedby', 'activity-popover');
+  activityPopover.hidden = false;
+  const rect = cell.getBoundingClientRect();
+  const popoverRect = activityPopover.getBoundingClientRect();
+  const left = clamp(rect.left + rect.width / 2 - popoverRect.width / 2, 12, window.innerWidth - popoverRect.width - 12);
+  const above = rect.top >= popoverRect.height + 20;
+  const top = above
+    ? rect.top - popoverRect.height - 10
+    : clamp(rect.bottom + 10, 12, window.innerHeight - popoverRect.height - 12);
+  activityPopover.style.left = `${left}px`;
+  activityPopover.style.top = `${top}px`;
+  activityPopover.style.transformOrigin = `${clamp(rect.left + rect.width / 2 - left, 12, popoverRect.width - 12)}px ${above ? 'bottom' : 'top'}`;
+  if (entering && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    activityPopoverAnimation = activityPopover.animate([
+      { opacity: 0, transform: `translateY(${above ? 4 : -4}px) scale(0.98)` },
+      { opacity: 1, transform: 'translateY(0) scale(1)' },
+    ], { duration: 150, easing: 'cubic-bezier(0.2, 0, 0, 1)' });
+  }
 }
 
 function recentDayKeys(totalDays) {
@@ -780,6 +879,7 @@ function createLocalAccount() {
 }
 
 function openChartModal() {
+  hideActivityPopover();
   window.clearTimeout(chartCloseTimer);
   renderModalChart();
   chartModal.hidden = false;
@@ -1031,6 +1131,24 @@ loginModal.addEventListener('click', (event) => {
   }
 });
 miniChartButton.addEventListener('click', openChartModal);
+hourGrid.addEventListener('pointerover', (event) => {
+  const cell = event.target.closest('.hour-cell');
+  if (cell && event.pointerType !== 'touch') showActivityPopover(cell);
+});
+hourGrid.addEventListener('pointerout', (event) => {
+  if (!event.relatedTarget?.closest?.('.hour-cell') && !activityPopover.contains(event.relatedTarget)) scheduleActivityPopoverClose();
+});
+hourGrid.addEventListener('focusin', (event) => {
+  if (event.target.matches('.hour-cell')) showActivityPopover(event.target);
+});
+hourGrid.addEventListener('focusout', (event) => {
+  if (!hourGrid.contains(event.relatedTarget)) hideActivityPopover();
+});
+activityPopover.addEventListener('pointerenter', () => window.clearTimeout(activityPopoverCloseTimer));
+activityPopover.addEventListener('pointerleave', scheduleActivityPopoverClose);
+document.addEventListener('scroll', (event) => {
+  if (!activityPopover.contains(event.target)) hideActivityPopover();
+}, true);
 chartClose.addEventListener('click', closeChartModal);
 chartModal.addEventListener('click', (event) => {
   if (event.target === chartModal) {
@@ -1057,6 +1175,7 @@ largeChart.addEventListener('mousemove', (event) => updateChartHover(largeChart,
 largeChart.addEventListener('mouseleave', () => hideChartHover(largeChart));
 
 window.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape') hideActivityPopover();
   if (event.key === 'Escape' && !loginModal.hidden) {
     closeLoginModal();
     return;
@@ -1097,6 +1216,7 @@ spotifyForm.addEventListener('submit', (event) => {
 });
 
 window.addEventListener('resize', () => {
+  hideActivityPopover();
   timerProgressWidth = 0;
   timerProgressHeight = 0;
   updateTimerProgress();
