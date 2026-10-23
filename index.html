@@ -9,7 +9,7 @@
     <link rel="icon" type="image/png" sizes="16x16" href="./Favicon%20pack/favicon-16x16.png" />
     <link rel="apple-touch-icon" href="./Favicon%20pack/apple-touch-icon.png" />
     <link rel="manifest" href="./site.webmanifest" />
-    <link rel="stylesheet" href="./styles.css?v=hourly-contribution-grid-compact" />
+    <link rel="stylesheet" href="./styles.css?v=main-screen-redesign" />
   </head>
   <body>
     <main class="app" aria-label="Timer and sound workspace">
@@ -17,74 +17,6 @@
         <button class="login-button" id="login-button" type="button">Log in</button>
         <div class="top-bar-right"><time class="performance-date" id="performance-date"></time><button id="achievements-button" class="achievements-button" type="button" aria-haspopup="dialog" aria-controls="achievements-dialog">Achievements<span class="achievement-dot" aria-hidden="true"></span></button></div>
       </header>
-
-      <section class="pane metronome-pane left-panel" aria-labelledby="sound-title">
-        <header class="pane-header">
-          <h1 id="sound-title">Sound</h1>
-          <span class="status" id="metro-status">Silent</span>
-        </header>
-
-        <div class="mode-switch" role="tablist" aria-label="Sound source">
-          <button class="mode-button is-selected" id="metronome-tab" type="button" role="tab" aria-selected="true" aria-controls="metronome-panel" data-sound-mode="metronome">Metronome</button>
-          <button class="mode-button" id="music-tab" type="button" role="tab" aria-selected="false" aria-controls="music-panel" data-sound-mode="music">Spotify</button>
-        </div>
-
-        <div class="sound-panel is-selected" id="metronome-panel" role="tabpanel" aria-labelledby="metronome-tab">
-          <span class="bpm-label">BPM</span>
-          <div class="bpm-wrap">
-            <input id="bpm-input" class="bpm-input" type="number" min="20" max="240" value="120" aria-label="Beats per minute" />
-          </div>
-
-          <div class="tempo-control" aria-label="Adjust tempo">
-            <button class="icon-button" id="bpm-minus" type="button" aria-label="Decrease tempo">−</button>
-            <input id="bpm-slider" type="range" min="20" max="240" value="120" />
-            <button class="icon-button" id="bpm-plus" type="button" aria-label="Increase tempo">+</button>
-          </div>
-
-          <div class="beats" aria-label="Beat indicator">
-            <div class="beat active"><span></span><small>1</small></div>
-            <div class="beat"><span></span><small>2</small></div>
-            <div class="beat"><span></span><small>3</small></div>
-            <div class="beat"><span></span><small>4</small></div>
-            <div class="beat"><span></span><small>5</small></div>
-            <div class="beat"><span></span><small>6</small></div>
-            <div class="beat"><span></span><small>7</small></div>
-            <div class="beat"><span></span><small>8</small></div>
-          </div>
-
-          <footer class="controls metro-controls">
-            <button class="control play-toggle" id="metro-toggle" type="button" aria-label="Start metronome" aria-pressed="false">
-              <span class="symbol" aria-hidden="true">
-                <span class="symbol-icon play-icon"></span>
-                <span class="symbol-icon pause-icon"></span>
-              </span>
-              <span class="control-label">Start</span>
-            </button>
-          </footer>
-        </div>
-
-        <div class="sound-panel music-panel" id="music-panel" role="tabpanel" aria-labelledby="music-tab" hidden>
-          <div class="spotify-stage">
-            <iframe
-              id="spotify-frame"
-              title="Spotify player"
-              src="https://open.spotify.com/embed/track/6rqhFgbbKwnb9MLmUQDhG6?utm_source=generator"
-              width="100%"
-              height="152"
-              allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-              loading="lazy"
-            ></iframe>
-          </div>
-
-          <form class="spotify-form" id="spotify-form">
-            <label>
-              <span>Spotify URL</span>
-              <input id="spotify-input" type="url" inputmode="url" placeholder="https://open.spotify.com/..." autocomplete="off" />
-            </label>
-            <button class="load-button" type="submit">Load</button>
-          </form>
-        </div>
-      </section>
 
       <section class="pane timer-pane left-panel" aria-labelledby="timer-title">
         <svg class="timer-progress" aria-hidden="true">
@@ -142,32 +74,70 @@
         </div>
       </section>
 
-      <section class="performance-bar" aria-label="Performance hours feature">
-        <div class="history-panel">
-          <span class="section-label">History</span>
-          <button class="mini-chart-button" id="mini-chart-button" type="button" aria-label="Open performance hours chart">
-            <strong class="history-total" id="history-total">0</strong>
-            <span class="hour-grid" id="hour-grid" aria-hidden="true"></span>
+      <section class="pane metronome-pane left-panel" aria-labelledby="sound-title">
+        <header class="pane-header">
+          <h1 id="sound-title">Sound</h1>
+          <span class="status" id="metro-status">Silent</span>
+        </header>
+
+        <button class="sound-settings-trigger" id="sound-settings-trigger" type="button" aria-label="Sound settings" aria-haspopup="dialog" aria-expanded="false" aria-controls="sound-popover">Sound settings</button>
+        <div class="sound-panel is-selected" id="metronome-panel" role="tabpanel" aria-labelledby="metronome-tab">
+          <button class="beats" id="sound-sticks" type="button" aria-label="Choose sound source and tempo" aria-haspopup="dialog" aria-expanded="false" aria-controls="sound-popover">
+            <span class="beat active"><span></span></span>
+            <span class="beat"><span></span></span>
+            <span class="beat"><span></span></span>
+            <span class="beat"><span></span></span>
+            <span class="beat"><span></span></span>
+            <span class="beat"><span></span></span>
+            <span class="beat"><span></span></span>
+            <span class="beat"><span></span></span>
           </button>
-        </div>
-
-        <div class="history-rule"></div>
-
-        <div class="performance-tally">
-          <div class="tally-types" role="group" aria-label="Time to log">
-            <button class="tally-type" data-mark-type="work" type="button" aria-pressed="true"><span class="work-symbol" aria-hidden="true">|</span> Work <span id="work-count">0</span></button>
-            <button class="tally-type" data-mark-type="break" type="button" aria-pressed="false"><span class="break-symbol" aria-hidden="true"></span> Break <span id="break-count">0</span></button>
+          <div class="controls metro-controls">
+            <button class="control play-toggle" id="metro-toggle" type="button" aria-label="Start metronome" aria-pressed="false">
+              <span class="symbol" aria-hidden="true"><span class="symbol-icon play-icon"></span><span class="symbol-icon pause-icon"></span></span>
+              <span class="control-label">Start</span>
+            </button>
           </div>
-          <button class="tally-button" id="tally-button" type="button" aria-label="Add performance mark">
-            <span class="tally-title">Click to add work</span>
-            <span class="tally-empty" id="tally-empty">
-              <img class="tally-empty-hand" src="./Hand-illustration.svg" alt="" aria-hidden="true" />
-              <span class="tally-empty-text">Click to<br />add work</span>
-            </span>
-            <svg class="tally-board" id="tally-board" viewBox="0 0 360 64" preserveAspectRatio="xMaxYMax meet" role="img" aria-label="Performance marks"></svg>
-          </button>
-          <button class="tally-remove" id="tally-remove" type="button" aria-label="Remove latest time entry" title="Remove latest time entry"></button>
         </div>
+        <div class="sound-panel music-panel" id="music-panel" role="tabpanel" aria-labelledby="music-tab" hidden>
+          <div class="spotify-stage">
+            <iframe id="spotify-frame" title="Spotify player" src="https://open.spotify.com/embed/track/6rqhFgbbKwnb9MLmUQDhG6?utm_source=generator" width="100%" height="152" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+          </div>
+        </div>
+        <div class="sound-popover" id="sound-popover" role="dialog" aria-label="Sound settings" hidden>
+          <div class="mode-switch" role="tablist" aria-label="Sound source">
+            <button class="mode-button is-selected" id="metronome-tab" type="button" role="tab" aria-selected="true" aria-controls="metronome-panel" data-sound-mode="metronome">Metronome</button>
+            <button class="mode-button" id="music-tab" type="button" role="tab" aria-selected="false" aria-controls="music-panel" data-sound-mode="music">Spotify</button>
+          </div>
+          <div id="tempo-settings">
+            <label class="tempo-heading" for="bpm-input">Tempo <span class="bpm-wrap"><input id="bpm-input" class="bpm-input" type="number" min="20" max="240" value="120" aria-label="Beats per minute" /> BPM</span></label>
+            <div class="tempo-control" aria-label="Adjust tempo">
+              <button class="icon-button" id="bpm-minus" type="button" aria-label="Decrease tempo">−</button>
+              <input id="bpm-slider" type="range" min="20" max="240" value="120" aria-label="Tempo" />
+              <button class="icon-button" id="bpm-plus" type="button" aria-label="Increase tempo">+</button>
+            </div>
+          </div>
+          <form class="spotify-form" id="spotify-form" hidden>
+            <label><span>Spotify URL</span><input id="spotify-input" type="url" inputmode="url" placeholder="https://open.spotify.com/..." autocomplete="off" /></label>
+            <button class="load-button" type="submit">Load</button>
+          </form>
+        </div>
+      </section>
+
+
+
+      <section class="performance-bar" aria-label="Activity">
+        <div class="activity-toolbar">
+          <span class="activity-count" id="history-total" aria-live="polite">0 entries</span>
+          <div class="activity-actions" role="group" aria-label="Log time">
+            <button class="activity-action" id="tally-remove" type="button" aria-label="Remove latest time entry" title="Remove latest time entry"><span aria-hidden="true">−</span></button>
+            <button class="activity-action" id="log-work" type="button" aria-label="Log work" title="Log work"><span class="log-work-symbol" aria-hidden="true"></span></button>
+            <button class="activity-action" id="log-break" type="button" aria-label="Log rest" title="Log rest"><span class="log-break-symbol" aria-hidden="true"><i></i><i></i><i></i><i></i></span></button>
+          </div>
+        </div>
+        <button class="mini-chart-button" id="mini-chart-button" type="button" aria-label="Open activity history">
+          <span class="hour-grid" id="hour-grid" aria-hidden="true"></span>
+        </button>
       </section>
     </main>
 
@@ -232,6 +202,6 @@
       <button id="unlock-ok" type="button" autofocus>OK</button>
     </dialog>
 
-    <script type="module" src="./app.js?v=hourly-contribution-grid-compact"></script>
+    <script type="module" src="./app.js?v=main-screen-redesign"></script>
   </body>
 </html>
