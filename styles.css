@@ -1276,7 +1276,7 @@ button:active:not(:disabled) {
 .achievement-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); visibility: hidden; }
 .has-unread .achievement-dot { visibility: visible; }
 .achievements-button:hover { color: var(--green); }
-.achievements-dialog, .achievement-unlock { color: var(--ink); background: var(--paper); border: 0; padding: 28px; width: min(540px, calc(100vw - 32px)); max-height: calc(100dvh - 48px); overflow-y: auto; border-radius: 20px; box-shadow: 0 8px 32px #0002, 0 1px 4px #0001; }
+.achievements-dialog, .achievement-unlock { color: var(--ink); background: var(--paper); border: 0; padding: 28px; width: min(540px, calc(100vw - 32px)); max-height: calc(100dvh - 48px); overflow-y: auto; border-radius: 16px; box-shadow: 0 8px 32px #0002, 0 1px 4px #0001; }
 .achievements-dialog::backdrop, .achievement-unlock::backdrop { background: #0005; }
 .achievements-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
 .achievements-header h2, .achievement-unlock h2 { font-size: 26px; margin: 0; font-weight: 600; text-wrap: balance; }
@@ -1345,7 +1345,7 @@ button:active:not(:disabled) {
 .beats:focus-visible, .sound-settings-trigger:focus-visible, .activity-action:focus-visible { outline: 2px solid var(--ink); outline-offset: 4px; }
 .sound-settings-trigger { display: none; position: absolute; right: 0; top: 0; min-height: 28px; border: 0; padding: 0 4px; background: var(--paper); color: var(--muted); font-size: 12px; cursor: pointer; }
 .is-music .sound-settings-trigger { display: block; }
-.sound-popover { position: absolute; top: calc(100% + 16px); right: 0; width: min(340px, calc(100vw - 40px)); padding: 18px; background: var(--paper); border-radius: 14px; box-shadow: 0 12px 40px #0002, 0 0 0 1px #0001; }
+.sound-popover { position: absolute; top: calc(100% + 16px); right: 0; width: min(340px, calc(100vw - 40px)); padding: 18px; background: var(--paper); border-radius: 10px; box-shadow: 0 12px 40px #0002, 0 0 0 1px #0001; }
 .sound-popover .mode-switch { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 0 0 20px; }
 .sound-popover .mode-button { min-height: 40px; font-size: 12px; }
 .tempo-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: 14px; }
@@ -1402,3 +1402,50 @@ button:active:not(:disabled) {
 @media (prefers-reduced-motion: reduce) {
   #timer-toggle, .metro-controls #metro-toggle { transition: none; }
 }
+
+/* Hourly details float above the inspected cell without shifting the grid. */
+.hour-cell { --cell-radius: clamp(4px, .6vw, 10px); border: 0; border-radius: var(--cell-radius); padding: 0; cursor: pointer; }
+.hour-cell:focus-visible { outline: none; }
+.hour-cell-ring, .hour-cell-surface { position: absolute; inset: 0; pointer-events: none; }
+.hour-cell-ring {
+  z-index: 0;
+  border-radius: calc(var(--cell-radius) + 3px);
+  box-shadow: 0 0 0 1px var(--ink);
+  opacity: 0;
+  transform: scale(1);
+  transition: transform 160ms cubic-bezier(0.2, 0, 0, 1), opacity 120ms ease-out;
+}
+.hour-cell-surface { z-index: 1; border-radius: inherit; background: inherit; box-shadow: inherit; }
+.hour-cell::before, .hour-cell::after { z-index: 2; }
+.hour-cell::after { border-bottom-right-radius: var(--cell-radius); }
+.hour-cell.is-inspected .hour-cell-ring, .hour-cell:focus-visible .hour-cell-ring { opacity: .7; transform: scale(1.1); }
+@media (prefers-reduced-motion: reduce) {
+  .hour-cell-ring { transition: none; }
+}
+.activity-popover {
+  position: fixed;
+  z-index: 10;
+  width: min(280px, calc(100vw - 24px));
+  max-height: min(340px, calc(100dvh - 24px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 18px;
+  border-radius: 10px;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 0 12px 40px #0002, 0 0 0 1px #0001;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+.activity-popover[hidden] { display: none; }
+.activity-popover-date { display: block; margin-bottom: 6px; color: var(--muted); font-size: 12px; }
+.activity-popover-hour { font-size: 18px; font-weight: 500; }
+.activity-popover-total { display: block; margin-top: 6px; color: var(--muted); font-size: 12px; }
+.activity-popover-counts { display: flex; gap: 20px; padding: 14px 0; }
+.activity-popover-count, .activity-entry-label { display: inline-flex; align-items: center; gap: 8px; }
+.activity-popover-count::before, .activity-entry-label::before { content: ''; width: 8px; height: 8px; flex-shrink: 0; background: var(--green); }
+.activity-entry-break::before { background: var(--break); }
+.activity-popover-entries { list-style: none; margin: 0; padding: 6px 0 0; border-top: 1px solid #0001; }
+.activity-popover-entries li { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 7px 0; }
+.activity-popover-entries time { color: var(--muted); }
+.activity-popover-empty { margin: 0; padding-top: 12px; border-top: 1px solid #0001; color: var(--muted); font-size: 12px; line-height: 1.5; }
