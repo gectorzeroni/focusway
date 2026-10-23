@@ -715,16 +715,6 @@ button:active:not(:disabled) {
   background: var(--rule);
 }
 
-.performance-tally {
-  position: relative;
-  display: grid;
-  min-height: 0;
-  overflow: hidden;
-  padding-top: 30px;
-  grid-template-rows: auto minmax(160px, 1fr);
-  gap: 18px;
-}
-
 .tally-types { display: flex; gap: 8px; padding-right: 80px; }
 .tally-type {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
@@ -740,10 +730,6 @@ button:active:not(:disabled) {
 .break-symbol { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; width: 20px; height: 24px; }
 .break-symbol::before, .break-symbol::after { content: ''; width: 3px; height: 8px; background: var(--break); }
 .tally-type span:last-child { font-variant-numeric: tabular-nums; }
-.tally-button.is-break .tally-empty { color: var(--break); }
-.tally-button.is-break .tally-empty-hand { visibility: hidden; }
-.tally-break { stroke: var(--break); stroke-width: 12; stroke-linecap: square; vector-effect: non-scaling-stroke; fill: none; }
-.tally-mark, .tally-cross { color: var(--green); }
 .chart-history-breaks { display: block; color: var(--break); margin-top: 4px; }
 .hour-cell { position: relative; }
 .hour-cell[data-break-level="1"]::after,
@@ -754,163 +740,6 @@ button:active:not(:disabled) {
 .hour-cell[data-break-level="2"]::before {
   content: ''; position: absolute; right: 47%; bottom: 47%;
   width: 21%; height: 21%; background: var(--break);
-}
-
-.tally-button {
-  position: relative;
-  display: block;
-  width: 100%;
-  min-height: 100%;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  color: var(--green);
-  cursor: pointer;
-  padding: 0;
-  text-align: left;
-}
-
-.tally-button:hover,
-.tally-button:focus-visible {
-  outline: 0;
-}
-
-.tally-title {
-  position: absolute;
-  top: 0;
-  left: 0;
-  display: none;
-  color: var(--ink);
-  font-size: 0.875rem;
-  font-weight: 500;
-  line-height: 1;
-  pointer-events: none;
-  text-transform: uppercase;
-}
-
-.tally-button.has-marks .tally-title {
-  display: block;
-}
-
-.tally-empty {
-  position: absolute;
-  top: 0;
-  left: 0;
-  display: grid;
-  grid-template-columns: minmax(0, 310px) minmax(120px, 227px);
-  align-items: start;
-  justify-content: space-between;
-  gap: 18px;
-  width: 100%;
-  color: var(--green);
-  font-family: "Google Sans Flex", "Google Sans", "Google Sans Text", "Product Sans", Arial, Helvetica, sans-serif;
-  font-size: 38px;
-  font-stretch: normal;
-  font-style: normal;
-  font-variation-settings: "wdth" 100, "GRAD" 0, "ROND" 0, "slnt" 0;
-  font-weight: 900;
-  line-height: 1;
-  pointer-events: none;
-  text-transform: uppercase;
-}
-
-.tally-button.has-marks .tally-empty {
-  display: none;
-}
-
-.tally-empty-hand {
-  display: block;
-  grid-column: 2;
-  grid-row: 1;
-  justify-self: end;
-  width: min(34vw, 227px);
-  max-width: 100%;
-  height: auto;
-  transform: translateX(-40px);
-}
-
-.tally-empty-text {
-  display: block;
-  grid-column: 1;
-  grid-row: 1;
-  max-width: 310px;
-  justify-self: start;
-}
-
-.tally-board {
-  position: absolute;
-  right: 0;
-  bottom: 18px;
-  display: block;
-  width: min(48%, 325px);
-  height: 122px;
-  min-width: 260px;
-  overflow: visible;
-}
-
-.tally-mark {
-  stroke: currentColor;
-  stroke-width: 12;
-  stroke-linecap: square;
-  vector-effect: non-scaling-stroke;
-}
-
-.tally-cross {
-  stroke: currentColor;
-  stroke-width: 12;
-  stroke-linecap: square;
-  vector-effect: non-scaling-stroke;
-}
-
-.tally-remove {
-  position: absolute;
-  top: 30px;
-  right: 0;
-  z-index: 2;
-  width: 72px;
-  height: 72px;
-  border: 1px solid var(--ink);
-  border-radius: 9px;
-  background: #ffffff;
-  color: var(--ink);
-  cursor: pointer;
-  opacity: 0;
-  pointer-events: none;
-  transform: translateY(-4px);
-  transition-property: border-color, color, opacity, transform;
-  transition-duration: 160ms, 160ms, 160ms, 160ms;
-  transition-timing-function: var(--ease-out);
-}
-
-.performance-tally:hover .tally-remove:not(:disabled),
-.performance-tally:focus-within .tally-remove:not(:disabled) {
-  opacity: 1;
-  pointer-events: auto;
-  transform: translateY(0);
-}
-
-.tally-remove::before {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 16px;
-  height: 1px;
-  background: currentColor;
-  content: "";
-  transform: translate(-50%, -50%);
-}
-
-.tally-remove:hover,
-.tally-remove:focus-visible {
-  border-color: var(--green);
-  color: var(--green);
-  outline: 0;
-}
-
-.tally-remove:disabled {
-  opacity: 0;
-  pointer-events: none;
-  transform: translateY(-4px);
 }
 
 .login-modal {
@@ -1473,3 +1302,103 @@ button:active:not(:disabled) {
 @media (prefers-reduced-motion: no-preference) { .achievements-dialog[open], .achievement-unlock[open] { animation: achievement-enter 180ms var(--ease-panel); } @keyframes achievement-enter { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } } }
 
 .achievement-close svg { display: block; width: 16px; height: 16px; }
+
+/* Main workspace: timer, compact sound player, and full-width activity. */
+.app {
+  grid-template-columns: minmax(0, 40fr) minmax(0, 60fr);
+  grid-template-rows: auto minmax(280px, 1fr) auto;
+  column-gap: 32px;
+  height: 100svh;
+  min-height: 680px;
+  overflow: visible;
+  padding: 0 20px 28px;
+}
+.top-bar { padding: 18px 0; min-height: 78px; grid-template-columns: 1fr 1fr; }
+.top-bar-right { position: static; }
+.performance-date { position: absolute; grid-column: 1 / -1; left: 50%; transform: translateX(-50%); }
+.achievements-button { margin-left: auto; }
+.timer-pane {
+  grid-column: 1; grid-row: 2; align-self: start; align-content: start;
+  grid-template-rows: auto auto; padding-top: 28px; container-type: inline-size;
+}
+.preset-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; width: 100%; margin: 0 0 22px; }
+.preset-tab { width: 100%; min-height: 40px; padding: 6px; font-size: 13px; }
+.preset-tab.is-selected { color: var(--ink); background: var(--paper); }
+.preset-tab:hover, .preset-tab:focus-visible { color: white; background: black; }
+.timer-row { display: grid; grid-template-columns: minmax(0, 1fr); gap: 24px; width: 100%; }
+.timer-row .readout { width: 100%; font-size: calc(184cqw / var(--timer-digits, 5)); line-height: 1.15; letter-spacing: -0.045em; font-variant-numeric: tabular-nums; }
+.timer-row .controls { grid-column: 1; width: 100%; }
+.timer-row #timer-toggle { width: 100%; height: 44px; min-height: 44px; border-radius: 6px; background: var(--ink); border-color: var(--ink); color: white; transition: opacity 160ms, transform 150ms, background-color 160ms; }
+#timer-toggle .symbol { display: none; }
+#timer-toggle .control-label { display: block; font-size: 13px; text-transform: uppercase; }
+#timer-toggle:hover { background: #222; }
+.timer-pane.is-running:not(:hover):not(:has(:focus-visible)) #timer-toggle { opacity: 0; pointer-events: none; }
+.timer-linear-progress { display: none; }
+.metronome-pane { grid-column: 2; grid-row: 2; justify-self: end; align-self: start; width: clamp(250px, 28vw, 420px); padding-top: 28px; z-index: 3; }
+#metronome-panel { display: flex; justify-content: flex-end; align-items: start; gap: 16px; min-height: 0; }
+#metronome-panel[hidden], .music-panel[hidden], .sound-popover[hidden], .spotify-form[hidden], #tempo-settings[hidden] { display: none; }
+.beats { order: 2; display: flex; gap: clamp(8px, .8vw, 14px); min-height: 0; padding: 0; background: transparent; border: 0; cursor: pointer; }
+.beat span { width: clamp(10px, 1vw, 18px); height: clamp(64px, 6.3vw, 120px); border-radius: 4px; }
+.metro-controls { order: 1; grid-column: auto; }
+.metro-controls #metro-toggle { width: clamp(64px, 6.3vw, 120px); height: clamp(64px, 6.3vw, 120px); border-radius: 12px; color: var(--ink); border-color: var(--ink); opacity: 0; pointer-events: none; transition: opacity 160ms, transform 150ms; }
+.metronome-pane:hover #metro-toggle, .metronome-pane:focus-within #metro-toggle { opacity: 1; pointer-events: auto; }
+.beats:focus-visible, .sound-settings-trigger:focus-visible, .activity-action:focus-visible { outline: 2px solid var(--ink); outline-offset: 4px; }
+.sound-settings-trigger { display: none; position: absolute; right: 0; top: 0; min-height: 28px; border: 0; padding: 0 4px; background: var(--paper); color: var(--muted); font-size: 12px; cursor: pointer; }
+.is-music .sound-settings-trigger { display: block; }
+.sound-popover { position: absolute; top: calc(100% + 16px); right: 0; width: min(340px, calc(100vw - 40px)); padding: 18px; background: var(--paper); border-radius: 14px; box-shadow: 0 12px 40px #0002, 0 0 0 1px #0001; }
+.sound-popover .mode-switch { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 0 0 20px; }
+.sound-popover .mode-button { min-height: 40px; font-size: 12px; }
+.tempo-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: 14px; }
+.sound-popover .bpm-wrap { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 12px; }
+.sound-popover .bpm-input { width: 54px; min-height: 40px; font-size: 22px; text-align: right; font-variant-numeric: tabular-nums; }
+.sound-popover .tempo-control { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+.tempo-control input { width: 100%; min-width: 0; accent-color: var(--green); }
+.tempo-control .icon-button { flex-shrink: 0; width: 40px; height: 40px; border: 0; border-radius: 6px; background: #f2f2f2; cursor: pointer; }
+.spotify-form { gap: 8px; }
+.spotify-form input { font-size: 12px; }
+.music-panel { width: 100%; }
+.performance-bar { grid-column: 1 / -1; grid-row: 3; display: flex; flex-direction: column; gap: 20px; padding-top: 48px; min-height: 0; }
+.activity-toolbar { display: flex; justify-content: space-between; align-items: end; gap: 20px; }
+.activity-count { font-size: clamp(22px, 2vw, 38px); font-weight: 400; line-height: 1; text-transform: uppercase; font-variant-numeric: tabular-nums; }
+.activity-actions { display: flex; gap: clamp(12px, 2.4vw, 46px); }
+.activity-action { display: grid; place-items: center; width: clamp(56px, 6vw, 112px); height: clamp(56px, 6vw, 112px); padding: 0; background: var(--paper); color: var(--ink); border: 1px solid var(--ink); border-radius: 9px; cursor: pointer; }
+.activity-action:hover { background: #f7f7f7; }
+.activity-action:disabled { opacity: .25; cursor: default; }
+#tally-remove { font-size: 30px; font-weight: 500; }
+.log-work-symbol { width: 27%; aspect-ratio: 1; background: var(--green); }
+.log-break-symbol { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; width: 27%; aspect-ratio: 1; }
+.log-break-symbol i { background: var(--break); }
+.mini-chart-button { display: block; width: 100%; height: auto; padding: 0; }
+.hour-grid { grid-template-columns: repeat(12, minmax(0, 1fr)); gap: clamp(12px, 2.4vw, 46px); width: 100%; padding: 0; }
+.hour-cell { width: 100%; }
+@media (hover: none) {
+  .timer-pane.is-running:not(:hover):not(:has(:focus-visible)) #timer-toggle { opacity: 1; pointer-events: auto; }
+  .metro-controls #metro-toggle { opacity: 1; pointer-events: auto; }
+}
+@media (max-width: 760px) {
+  .app { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto auto auto; height: auto; min-height: 100svh; padding: 0 16px 24px; }
+  .top-bar { min-height: 72px; padding: 12px 0; }
+  .top-bar-right { flex-wrap: nowrap; gap: 4px; }
+  .top-bar .performance-date { font-size: 11px; }
+  .achievements-button { font-size: 11px; }
+  .timer-pane { grid-column: 1; grid-row: 2; width: min(100%, 520px); padding-top: 24px; }
+  .timer-row .controls { grid-column: 1; justify-self: stretch; }
+  .metronome-pane { grid-column: 1; grid-row: 3; width: 100%; padding-top: 36px; min-height: 100px; }
+  #metronome-panel { justify-content: flex-end; }
+  .beats { min-height: 0; }
+  .beat span { width: 12px; height: 64px; }
+  .is-music .sound-settings-trigger { top: 8px; }
+  .music-panel { width: min(100%, 420px); margin-left: auto; }
+  .performance-bar { grid-column: 1; grid-row: 4; padding-top: 48px; gap: 18px; }
+  .hour-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 14px; }
+  .activity-count { font-size: 22px; }
+  .activity-actions { gap: 10px; }
+  .activity-action { width: 48px; height: 48px; }
+}
+@media (max-width: 420px) {
+  .top-bar .performance-date { left: auto; right: 0; transform: none; top: 16px; }
+  .top-bar-right { padding-top: 20px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #timer-toggle, .metro-controls #metro-toggle { transition: none; }
+}

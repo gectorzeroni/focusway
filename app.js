@@ -31,11 +31,9 @@ const timerProgressTrack = document.querySelector('.timer-progress-track');
 const timerProgressLine = document.querySelector('.timer-progress-line');
 const timerLinearProgressBar = document.querySelector('.timer-linear-progress span');
 const performanceDate = document.querySelector('#performance-date');
-const tallyButton = document.querySelector('#tally-button');
 const tallyRemove = document.querySelector('#tally-remove');
-const tallyBoard = document.querySelector('#tally-board');
-const tallyTypes = [...document.querySelectorAll('[data-mark-type]')];
-let selectedMarkType = 'work';
+const logWorkButton = document.querySelector('#log-work');
+const logBreakButton = document.querySelector('#log-break');
 const loginButton = document.querySelector('#login-button');
 const loginModal = document.querySelector('#login-modal');
 const loginClose = document.querySelector('#login-close');
@@ -55,6 +53,9 @@ const largeChart = document.querySelector('#large-chart');
 const chartHistoryList = document.querySelector('#chart-history-list');
 
 const metroPane = document.querySelector('.metronome-pane');
+const soundPopover = document.querySelector('#sound-popover');
+const soundSticks = document.querySelector('#sound-sticks');
+const soundSettingsTrigger = document.querySelector('#sound-settings-trigger');
 const metroStatus = document.querySelector('#metro-status');
 const bpmInput = document.querySelector('#bpm-input');
 const bpmSlider = document.querySelector('#bpm-slider');
@@ -157,6 +158,7 @@ function setTimerDuration(duration) {
 function updateTimerDisplay() {
   if (editingTimer) return;
   timerDisplay.textContent = formatTime(timerRemaining);
+  timerDisplay.style.setProperty('--timer-digits', Math.max(5, timerDisplay.textContent.length));
 }
 
 function updateTimerProgressPath() {
@@ -383,68 +385,9 @@ function makeSvgElement(name, attributes = {}) {
   return element;
 }
 
-function renderTally() {
+function renderActivityActions() {
   ensureTodayPerformanceMarks();
-  clearSvg(tallyBoard);
-
-  const entries = entriesForDay(todayKey());
-  const count = entries.length;
-  const breakCount = (breakDays[todayKey()] || []).length;
-  const summary = `${performanceMarks.length} work ticks and ${breakCount} ${breakCount === 1 ? 'break' : 'breaks'} today`;
-  document.querySelector('#work-count').textContent = performanceMarks.length;
-  document.querySelector('#break-count').textContent = breakCount;
-  tallyButton.setAttribute('aria-label', `Add ${selectedMarkType === 'work' ? 'work tick' : 'break line'}, ${summary}`);
-  tallyBoard.setAttribute('aria-label', summary);
-  tallyButton.classList.toggle('is-break', selectedMarkType === 'break');
-  tallyButton.querySelector('.tally-title').textContent = `Click to add ${selectedMarkType}`;
-  tallyButton.querySelector('.tally-empty-text').innerHTML = `Click to<br />add ${selectedMarkType}`;
-  tallyTypes.forEach((button) => button.setAttribute('aria-pressed', String(button.dataset.markType === selectedMarkType)));
-  tallyButton.classList.toggle('has-marks', count > 0);
-  tallyRemove.disabled = count === 0;
-
-  if (!count) {
-    tallyBoard.setAttribute('viewBox', '0 0 360 64');
-    tallyBoard.style.width = '';
-    return;
-  }
-
-  tallyBoard.style.opacity = '1';
-
-  const groupGap = 80;
-  const lineGap = 18;
-  const startX = 12;
-  const strokeInset = 2.5;
-  const shownCount = Math.min(count, 12);
-  const hiddenCount = count - shownCount;
-  let contentRight = startX + strokeInset;
-
-  for (let index = 0; index < shownCount; index += 1) {
-    const group = Math.floor(index / 3);
-    const offset = index % 3;
-    const x = startX + group * groupGap + offset * lineGap;
-    contentRight = Math.max(contentRight, x + strokeInset);
-    const isBreak = entries[index].type === 'break';
-    tallyBoard.appendChild(isBreak
-      ? makeSvgElement('path', { class: 'tally-break', d: `M ${x} 0 V 25 M ${x} 39 V 64` })
-      : makeSvgElement('line', { class: 'tally-mark', x1: x, y1: 0, x2: x, y2: 64 }));
-    if (isBreak) contentRight = Math.max(contentRight, x + 10);
-
-    if (offset === 2 && entries.slice(index - 2, index + 1).every((entry) => entry.type === 'work')) {
-      contentRight = Math.max(contentRight, x + 6 + strokeInset);
-      tallyBoard.appendChild(
-        makeSvgElement('line', { class: 'tally-cross', x1: x - lineGap * 2 - 6, y1: 32, x2: x + 6, y2: 32 }),
-      );
-    }
-  }
-
-  if (hiddenCount > 0) {
-    const text = makeSvgElement('text', { class: 'chart-label', x: 330, y: 38, 'text-anchor': 'middle' });
-    text.textContent = `+${hiddenCount}`;
-    tallyBoard.appendChild(text);
-    contentRight = 360;
-  }
-
-  tallyBoard.setAttribute('viewBox', `0 0 ${contentRight} 64`);
+  tallyRemove.disabled = entriesForDay(todayKey()).length === 0;
 }
 
 function marksForDay(key) {
@@ -705,14 +648,15 @@ function renderChartHistory() {
 function renderPerformance() {
   ensureTodayPerformanceMarks();
   const todayConfig = chartConfigForRange('today');
-  renderTally();
+  renderActivityActions();
   renderHourlyContributionGrid();
   renderModalChart();
   renderChartHistory();
-  historyTotal.textContent = todayConfig.total;
+  const entryCount = entriesForDay(todayKey()).length;
+  historyTotal.textContent = `${entryCount} ${entryCount === 1 ? 'entry' : 'entries'}`;
   miniChartButton.setAttribute(
     'aria-label',
-    `Open performance hours chart, ${formatTickCount(todayConfig.total)} today`,
+    `Open activity history, ${entryCount} ${entryCount === 1 ? 'entry' : 'entries'} today, ${formatTickCount(todayConfig.total)} worked`,
   );
   performanceDate.dateTime = todayKey();
   performanceDate.textContent = formatPerformanceDate();
@@ -772,10 +716,10 @@ function hideChartHover(svg) {
   svg.querySelector('.chart-hover')?.classList.remove('is-visible');
 }
 
-function addPerformanceMark() {
+function addPerformanceMark(type = 'work') {
   ensureTodayPerformanceMarks();
   achievements.refresh();
-  if (selectedMarkType === 'break') {
+  if (type === 'break') {
     const key = todayKey();
     breakDays[key] = breakDays[key] || [];
     breakDays[key].push(Date.now());
@@ -926,6 +870,9 @@ function setSoundMode(mode, { playFeedback = true } = {}) {
 
   metronomePanel.hidden = isMusic;
   musicPanel.hidden = !isMusic;
+  document.querySelector('#tempo-settings').hidden = isMusic;
+  spotifyForm.hidden = !isMusic;
+  metroPane.classList.toggle('is-music', isMusic);
 
   if (isMusic) {
     stopMetronome();
@@ -1069,11 +1016,8 @@ bpmSlider.addEventListener('input', () => setBpm(bpmSlider.value));
 bpmMinus.addEventListener('click', () => setBpm(parseInt(bpmInput.value, 10) - 1));
 bpmPlus.addEventListener('click', () => setBpm(parseInt(bpmInput.value, 10) + 1));
 metroToggle.addEventListener('click', toggleMetronome);
-tallyButton.addEventListener('click', addPerformanceMark);
-tallyTypes.forEach((button) => button.addEventListener('click', () => {
-  selectedMarkType = button.dataset.markType;
-  renderTally();
-}));
+logWorkButton.addEventListener('click', () => addPerformanceMark('work'));
+logBreakButton.addEventListener('click', () => addPerformanceMark('break'));
 tallyRemove.addEventListener('click', removePerformanceMark);
 loginButton.addEventListener('click', openLoginModal);
 loginClose.addEventListener('click', closeLoginModal);
@@ -1120,6 +1064,26 @@ window.addEventListener('keydown', (event) => {
 
   if (event.key === 'Escape' && !chartModal.hidden) {
     closeChartModal();
+  }
+});
+
+function setSoundPopoverOpen(open) {
+  soundPopover.hidden = !open;
+  soundSticks.setAttribute('aria-expanded', String(open));
+  soundSettingsTrigger.setAttribute('aria-expanded', String(open));
+  if (open) soundPopover.querySelector('[aria-selected="true"]').focus();
+}
+
+soundSticks.addEventListener('click', () => setSoundPopoverOpen(soundPopover.hidden));
+soundSettingsTrigger.addEventListener('click', () => setSoundPopoverOpen(soundPopover.hidden));
+document.addEventListener('click', (event) => {
+  if (!soundPopover.hidden && !metroPane.contains(event.target)) setSoundPopoverOpen(false);
+});
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && !soundPopover.hidden) {
+    setSoundPopoverOpen(false);
+    (soundMode === 'music' ? soundSettingsTrigger : soundSticks).focus();
+    event.stopPropagation();
   }
 });
 
