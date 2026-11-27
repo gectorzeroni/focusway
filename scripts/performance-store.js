@@ -1,6 +1,7 @@
 export const STORAGE_KEYS = {
   performanceDays: 'focusway.performanceDays',
   breakDays: 'focusway.breakDays',
+  meetingDays: 'focusway.meetingDays',
   performanceMarks: 'focusway.performanceMarks',
   localAccountName: 'focusway.localAccountName',
   localProfiles: 'focusway.localProfiles',
