@@ -132,6 +132,7 @@
           <div class="activity-actions" role="group" aria-label="Log time">
             <button class="activity-action" id="tally-remove" type="button" aria-label="Remove latest time entry" title="Remove latest time entry"><span aria-hidden="true">−</span></button>
             <button class="activity-action" id="log-work" type="button" aria-label="Log work" title="Log work"><span class="log-work-symbol" aria-hidden="true"></span></button>
+            <button class="activity-action" id="log-meeting" type="button" aria-label="Log meeting" title="Log meeting"><span class="log-meeting-symbol" aria-hidden="true"></span></button>
             <button class="activity-action" id="log-break" type="button" aria-label="Log rest" title="Log rest"><span class="log-break-symbol" aria-hidden="true"><i></i><i></i><i></i><i></i></span></button>
           </div>
         </div>
@@ -183,6 +184,7 @@
         </div>
         <div class="chart-types" role="group" aria-label="Chart lines">
           <button class="tally-type" data-chart-type="work" type="button" aria-pressed="true"><span class="work-symbol" aria-hidden="true">|</span> Work</button>
+          <button class="tally-type" data-chart-type="meeting" type="button" aria-pressed="true"><span class="meeting-symbol" aria-hidden="true"></span> Meeting</button>
           <button class="tally-type" data-chart-type="break" type="button" aria-pressed="true"><span class="break-symbol" aria-hidden="true"></span> Break</button>
         </div>
         <svg class="large-chart" id="large-chart" viewBox="0 0 720 300" role="img" aria-label="Work ticks and breaks by half hour"></svg>

@@ -35,6 +35,7 @@ const performanceDate = document.querySelector('#performance-date');
 const tallyRemove = document.querySelector('#tally-remove');
 const logWorkButton = document.querySelector('#log-work');
 const logBreakButton = document.querySelector('#log-break');
+const logMeetingButton = document.querySelector('#log-meeting');
 const loginButton = document.querySelector('#login-button');
 const loginModal = document.querySelector('#login-modal');
 const loginClose = document.querySelector('#login-close');
@@ -52,7 +53,7 @@ const chartClose = document.querySelector('#chart-close');
 const chartSubtitle = document.querySelector('#chart-subtitle');
 const chartTotal = document.querySelector('#chart-total');
 const chartFilters = [...document.querySelectorAll('[data-chart-type]')];
-const visibleChartTypes = new Set(['work', 'break']);
+const visibleChartTypes = new Set(['work', 'break', 'meeting']);
 const chartRangeSelect = document.querySelector('#chart-range-select');
 const largeChart = document.querySelector('#large-chart');
 const chartHistoryList = document.querySelector('#chart-history-list');
@@ -95,6 +96,7 @@ let currentSpotifyEmbedSrc = spotifyFrame.src;
 migrateProfilePerformanceDays();
 let performanceDays = readPerformanceDays();
 const breakDays = readPerformanceDays(undefined, STORAGE_KEYS.breakDays);
+const meetingDays = readPerformanceDays(undefined, STORAGE_KEYS.meetingDays);
 let performanceMarks = [];
 let chartRange = 'today';
 let chartCloseTimer = null;
@@ -367,12 +369,14 @@ function ensureTodayPerformanceMarks() {
 function storePerformanceDays() {
   writePerformanceDays(performanceDays);
   writePerformanceDays(breakDays, undefined, STORAGE_KEYS.breakDays);
+  writePerformanceDays(meetingDays, undefined, STORAGE_KEYS.meetingDays);
 }
 
 function entriesForDay(key) {
   return [
     ...(performanceDays[key] || []).map((time) => ({ time, type: 'work' })),
     ...(breakDays[key] || []).map((time) => ({ time, type: 'break' })),
+    ...(meetingDays[key] || []).map((time) => ({ time, type: 'meeting' })),
   ].sort((a, b) => a.time - b.time);
 }
 
@@ -424,7 +428,7 @@ function hourlyPerformanceDetails(key = todayKey(), days = performanceDays, type
   return {
     bins,
     hoverDetails: marksByHalfHour.map((marks, index) => [
-      `${formatHalfHourLabel(index)} · ${marks.length} ${type === 'work' ? 'work ticks' : 'breaks'}`,
+      `${formatHalfHourLabel(index)} · ${marks.length} ${({ work: 'work ticks', break: 'breaks', meeting: 'meetings' })[type]}`,
     ]),
   };
 }
@@ -475,7 +479,9 @@ function renderHourlyContributionGrid(key = todayKey()) {
     cell.dataset.day = key;
     const breaks = (breakDays[key] || []).filter((mark) => new Date(mark).getHours() === hour).length;
     cell.dataset.breakLevel = contributionLevel(breaks);
-    cell.setAttribute('aria-label', `${formatHourRange(hour)} · ${formatTickCount(count)} worked · ${breaks} ${breaks === 1 ? 'rest entry' : 'rest entries'}. Open history`);
+    const meetings = (meetingDays[key] || []).filter((mark) => new Date(mark).getHours() === hour).length;
+    cell.dataset.meetingLevel = contributionLevel(meetings);
+    cell.setAttribute('aria-label', `${formatHourRange(hour)} · ${formatTickCount(count)} worked · ${breaks} ${breaks === 1 ? 'rest entry' : 'rest entries'} · ${meetings} ${meetings === 1 ? 'meeting' : 'meetings'}. Open history`);
   });
   if (inspectedActivityCell) showActivityPopover(inspectedActivityCell);
 }
@@ -503,7 +509,8 @@ function showActivityPopover(cell) {
   const hour = Number(cell.dataset.hour);
   const entries = entriesForDay(cell.dataset.day).filter((entry) => new Date(entry.time).getHours() === hour);
   const workCount = entries.filter((entry) => entry.type === 'work').length;
-  const restCount = entries.length - workCount;
+  const restCount = entries.filter((entry) => entry.type === 'break').length;
+  const meetingCount = entries.filter((entry) => entry.type === 'meeting').length;
   const date = document.createElement('span');
   date.className = 'activity-popover-date';
   date.textContent = formatPerformanceDate(dateFromKey(cell.dataset.day));
@@ -515,7 +522,7 @@ function showActivityPopover(cell) {
   total.textContent = `${entries.length} ${entries.length === 1 ? 'entry' : 'entries'}`;
   const counts = document.createElement('div');
   counts.className = 'activity-popover-counts';
-  [['work', 'Work', workCount], ['break', 'Rest', restCount]].forEach(([type, label, count]) => {
+  [['work', 'Work', workCount], ['break', 'Rest', restCount], ['meeting', 'Meeting', meetingCount]].forEach(([type, label, count]) => {
     const item = document.createElement('span');
     item.className = `activity-popover-count activity-entry-${type}`;
     item.textContent = `${label} ${count}`;
@@ -527,7 +534,7 @@ function showActivityPopover(cell) {
     const row = document.createElement('li');
     const label = document.createElement('span');
     label.className = `activity-entry-label activity-entry-${entry.type}`;
-    label.textContent = entry.type === 'work' ? 'Work' : 'Rest';
+    label.textContent = ({ work: 'Work', break: 'Rest', meeting: 'Meeting' })[entry.type];
     const time = document.createElement('time');
     time.dateTime = new Date(entry.time).toISOString();
     time.textContent = formatMarkTime(entry.time);
@@ -654,7 +661,7 @@ function chartConfigForRange(range, sourceDays = performanceDays, type = 'work')
       bins: days.map((day) => day.value),
       labels: days.map((day, index) => [index, day.label]),
       hoverDetails: days.map((day) => [
-        `${day.label} · ${day.value} ${type === 'work' ? 'work ticks' : 'breaks'}`,
+        `${day.label} · ${day.value} ${({ work: 'work ticks', break: 'breaks', meeting: 'meetings' })[type]}`,
       ]),
       subtitle: 'Last 5 days',
       total: days.reduce((sum, day) => sum + day.value, 0),
@@ -669,7 +676,7 @@ function chartConfigForRange(range, sourceDays = performanceDays, type = 'work')
         .map((day, index) => [index, day.label])
         .filter((_, index) => index === 0 || index === 7 || index === 14 || index === 21 || index === 29),
       hoverDetails: days.map((day) => [
-        `${day.label} · ${day.value} ${type === 'work' ? 'work ticks' : 'breaks'}`,
+        `${day.label} · ${day.value} ${({ work: 'work ticks', break: 'breaks', meeting: 'meetings' })[type]}`,
       ]),
       subtitle: 'Last 30 days',
       total: days.reduce((sum, day) => sum + day.value, 0),
@@ -689,13 +696,14 @@ function chartConfigForRange(range, sourceDays = performanceDays, type = 'work')
 function renderModalChart() {
   const work = { ...chartConfigForRange(chartRange), type: 'work' };
   const rest = { ...chartConfigForRange(chartRange, breakDays, 'break'), type: 'break' };
-  const series = [work, rest].filter((item) => visibleChartTypes.has(item.type));
+  const meeting = { ...chartConfigForRange(chartRange, meetingDays, 'meeting'), type: 'meeting' };
+  const series = [work, rest, meeting].filter((item) => visibleChartTypes.has(item.type));
   const hoverDetails = work.bins.map((_, index) => series.map((item) => item.hoverDetails[index][0]));
   renderChart(largeChart, 720, 300, series, true, work.labels, hoverDetails);
   chartTotal.textContent = series.reduce((sum, item) => sum + item.total, 0);
-  chartTotal.setAttribute('aria-label', series.map((item) => `${item.total} ${item.type === 'work' ? 'work ticks' : 'breaks'}`).join(', '));
-  document.querySelector('#chart-total-detail').textContent = series.map((item) => `${item.total} ${item.type === 'work' ? 'work ticks' : 'breaks'}`).join(' · ');
-  largeChart.setAttribute('aria-label', `${series.map((item) => item.type === 'work' ? 'Work ticks' : 'Breaks').join(' and ')} by ${chartRange === 'today' || chartRange === 'previous' ? 'half hour' : 'day'}`);
+  chartTotal.setAttribute('aria-label', series.map((item) => `${item.total} ${({ work: 'work ticks', break: 'breaks', meeting: 'meetings' })[item.type]}`).join(', '));
+  document.querySelector('#chart-total-detail').textContent = series.map((item) => `${item.total} ${({ work: 'work ticks', break: 'breaks', meeting: 'meetings' })[item.type]}`).join(' · ');
+  largeChart.setAttribute('aria-label', `${series.map((item) => ({ work: 'Work ticks', break: 'Breaks', meeting: 'Meetings' })[item.type]).join(' and ')} by ${chartRange === 'today' || chartRange === 'previous' ? 'half hour' : 'day'}`);
   chartFilters.forEach((button) => {
     const active = visibleChartTypes.has(button.dataset.chartType);
     button.setAttribute('aria-pressed', String(active));
@@ -710,7 +718,7 @@ function renderChartHistory() {
     chartHistoryList.removeChild(chartHistoryList.firstChild);
   }
 
-  const keys = new Set([...Object.keys(performanceDays), ...Object.keys(breakDays)]);
+  const keys = new Set([...Object.keys(performanceDays), ...Object.keys(breakDays), ...Object.keys(meetingDays)]);
   keys.add(todayKey());
 
   [...keys]
@@ -727,7 +735,8 @@ function renderChartHistory() {
       const count = marks.length;
       const total = document.createElement('strong');
       const breaks = breakDays[key] || [];
-      total.textContent = `${formatTickCount(count)} worked · ${breaks.length} ${breaks.length === 1 ? 'break' : 'breaks'}`;
+      const meetings = meetingDays[key] || [];
+      total.textContent = `${formatTickCount(count)} worked · ${breaks.length} ${breaks.length === 1 ? 'break' : 'breaks'} · ${meetings.length} ${meetings.length === 1 ? 'meeting' : 'meetings'}`;
 
       const times = document.createElement('span');
       times.className = 'chart-history-times';
@@ -737,6 +746,13 @@ function renderChartHistory() {
         breakTimes.className = 'chart-history-breaks';
         breakTimes.textContent = `Break: ${formatHistoryTimes(breaks)}`;
         times.appendChild(breakTimes);
+      }
+
+      if (meetings.length) {
+        const meetingTimes = document.createElement('span');
+        meetingTimes.className = 'chart-history-meetings';
+        meetingTimes.textContent = `Meeting: ${formatHistoryTimes(meetings)}`;
+        times.appendChild(meetingTimes);
       }
 
       row.append(date, total, times);
@@ -818,10 +834,11 @@ function hideChartHover(svg) {
 function addPerformanceMark(type = 'work') {
   ensureTodayPerformanceMarks();
   achievements.refresh();
-  if (type === 'break') {
+  if (type === 'break' || type === 'meeting') {
     const key = todayKey();
-    breakDays[key] = breakDays[key] || [];
-    breakDays[key].push(Date.now());
+    const days = type === 'break' ? breakDays : meetingDays;
+    days[key] = days[key] || [];
+    days[key].push(Date.now());
   } else {
     performanceMarks.push(Date.now());
   }
@@ -836,6 +853,7 @@ function removePerformanceMark() {
   const latest = entriesForDay(todayKey()).at(-1);
   if (!latest) return;
   if (latest.type === 'break') breakDays[todayKey()].pop();
+  else if (latest.type === 'meeting') meetingDays[todayKey()].pop();
   else performanceMarks.pop();
   storePerformanceDays();
   renderPerformance();
@@ -1118,6 +1136,7 @@ bpmPlus.addEventListener('click', () => setBpm(parseInt(bpmInput.value, 10) + 1)
 metroToggle.addEventListener('click', toggleMetronome);
 logWorkButton.addEventListener('click', () => addPerformanceMark('work'));
 logBreakButton.addEventListener('click', () => addPerformanceMark('break'));
+logMeetingButton.addEventListener('click', () => addPerformanceMark('meeting'));
 tallyRemove.addEventListener('click', removePerformanceMark);
 loginButton.addEventListener('click', openLoginModal);
 loginClose.addEventListener('click', closeLoginModal);

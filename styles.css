@@ -8,6 +8,7 @@
   --rule: #000000;
   --green: #00d652;
   --break: #3974d8;
+  --meeting: #f28a18;
   --timer-color: var(--green);
   --bpm-number-size: clamp(5.25rem, 12.075vw, 8.006rem);
   --timer-number-size: clamp(6rem, 15vw, 13.4375rem);
@@ -1449,3 +1450,13 @@ button:active:not(:disabled) {
 .activity-popover-entries li { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 7px 0; }
 .activity-popover-entries time { color: var(--muted); }
 .activity-popover-empty { margin: 0; padding-top: 12px; border-top: 1px solid #0001; color: var(--muted); font-size: 12px; line-height: 1.5; }
+
+.log-meeting-symbol, .meeting-symbol { width: 27%; aspect-ratio: 1; background: var(--meeting); clip-path: polygon(50% 0, 100% 100%, 0 100%); }
+.meeting-symbol { width: 16px; height: 16px; }
+.chart-line-meeting { stroke: var(--meeting); stroke-dasharray: 2 4; }
+.chart-hover-dot.chart-dot-meeting { fill: var(--meeting); }
+.chart-history-meetings { display: block; color: var(--meeting); margin-top: 4px; }
+.activity-entry-meeting::before { background: var(--meeting); clip-path: polygon(50% 0, 100% 100%, 0 100%); }
+.hour-cell[data-meeting-level] .hour-cell-surface::after { content: ''; position: absolute; top: 3px; right: 3px; width: 26%; aspect-ratio: 1; background: var(--meeting); clip-path: polygon(50% 0, 100% 100%, 0 100%); }
+.hour-cell[data-meeting-level="0"] .hour-cell-surface::after { display: none; }
+.activity-popover-counts { flex-wrap: wrap; }
